@@ -128,18 +128,17 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
 {
     const FTransform ModuleWorldTransform {ModuleData.Offset * Head.Transform};
 
-    UStaticMeshComponent* Comp {NewObject<UStaticMeshComponent>(PreviewScene->GetWorld()->GetCurrentLevel())};
+    UStaticMeshComponent* Comp { NewObject<UStaticMeshComponent>(GetTransientPackage()) };
+
     if (!Comp)
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to create StaticMeshComponent for module"));
         return nullptr;
     }
-
     Comp->RegisterComponentWithWorld(PreviewScene->GetWorld());
-    Comp->SetStaticMesh(CubeMesh);
-    Comp->SetWorldLocation(ModuleWorldTransform.GetLocation());
-    Comp->SetWorldRotation(ModuleWorldTransform.GetRotation());
-    Comp->SetWorldScale3D(ModuleWorldTransform.GetScale3D());
+    Comp->SetStaticMesh(ModuleData.ModuleMesh);
+    Comp->SetMaterial(0, BaseMaterial);
+    PreviewScene->AddComponent(Comp, ModuleWorldTransform);
 
     // TODO: Remove this when we have proper assets for each module
     if (BaseMaterial)
@@ -158,6 +157,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
     }
 
     ModuleMeshComponents.Add(Comp);
+
     return Comp;
 }
 
