@@ -34,6 +34,7 @@ private:
     void RefreshHeadList();
     /** Create a single head entry */
     TSharedRef<SWidget> CreateHeadEntry(int32 Index);
+    void RebuildModuleChain(FTLHead& Head);
 
     /** MODULE */
 private:

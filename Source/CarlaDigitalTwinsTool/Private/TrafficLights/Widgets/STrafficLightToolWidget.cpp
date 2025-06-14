@@ -10,6 +10,8 @@
 #include "Widgets/Input/SSlider.h"
 #include "Widgets/Input/STextComboBox.h"
 #include "InputCoreTypes.h"
+#include "Components/SceneComponent.h"
+#include "Engine/StaticMeshSocket.h"
 
 void STrafficLightToolWidget::Construct(const FArguments& InArgs)
 {
@@ -1028,47 +1030,73 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
     ];
 }
 
-FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
+void STrafficLightToolWidget::RebuildModuleChain(FTLHead& Head)
 {
-    if (!Heads.IsValidIndex(HeadIndex))
+    if (Head.Modules.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("STrafficLightToolWidget::OnAddModuleClicked - Invalid head index: %d"), HeadIndex);
-        return FReply::Handled();
+        return;
     }
 
-    // Create new head data
+    Head.Modules[0].Transform = FTransform::Identity;
+    if (Head.Modules[0].ModuleMeshComponent)
+    {
+        Head.Modules[0].ModuleMeshComponent->SetRelativeTransform(Head.Modules[0].Transform * Head.Modules[0].Offset);
+    }
+
+    for (int32 i {1}; i < Head.Modules.Num(); ++i)
+    {
+        const FTLModule& PrevModule {Head.Modules[i - 1]};
+        FTLModule& CurrModule {Head.Modules[i]};
+
+        const FName EndSocketName {FName("Socket2")};
+        const FName BeginSocketName {FName("Socket1")};
+
+        if (PrevModule.ModuleMeshComponent && CurrModule.ModuleMeshComponent)
+        {
+            if (PrevModule.ModuleMeshComponent->DoesSocketExist(EndSocketName) && CurrModule.ModuleMeshComponent->DoesSocketExist(BeginSocketName))
+            {
+                const FTransform EndSocketLocal {PrevModule.ModuleMeshComponent->GetSocketTransform(EndSocketName, RTS_Component)};
+                const FTransform EndSocketWorldRelativeToHead {PrevModule.Transform * EndSocketLocal};
+                const FTransform BeginSocketLocal {CurrModule.ModuleMeshComponent->GetSocketTransform(BeginSocketName, RTS_Component)};
+                const FTransform SnapDelta {EndSocketWorldRelativeToHead * BeginSocketLocal.Inverse()};
+
+                CurrModule.Transform = SnapDelta;
+                CurrModule.ModuleMeshComponent->SetRelativeTransform(CurrModule.Transform * CurrModule.Offset);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("One of the sockets is missing in module %d"), i);
+            }
+        }
+    }
+}
+
+FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
+{
+    check(Heads.IsValidIndex(HeadIndex));
+
     FTLHead& HeadData = Heads[HeadIndex];
 
     FTLModule NewModule;
     NewModule.ModuleID = FGuid::NewGuid();
+    NewModule.Offset = FTransform::Identity;
 
-    if (HeadData.Modules.Num() > 0)
-    {
-        // Copy the last module's offset as a starting point for the new module
-        const FTLModule& LastModule = HeadData.Modules.Last();
-        NewModule.Offset = LastModule.Offset;
+    NewModule.ModuleMesh = Cast<UStaticMesh>(StaticLoadObject(
+        UStaticMesh::StaticClass(), nullptr,
+        TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Black_Module_01.SM_TrafficLights_Black_Module_01")
+    ));
 
-        switch (HeadData.Orientation)
-        {
-            case ETLHeadOrientation::Vertical:
-                NewModule.Offset.AddToTranslation(FVector(0.0f, 0.0f, 110.0f));
-                break;
-            case ETLHeadOrientation::Horizontal:
-                NewModule.Offset.AddToTranslation(FVector(0.0f, 110.0f, 0.0f));
-                break;
-            default:
-                NewModule.Offset = FTransform::Identity; // Default offset if no orientation is set
-                break;
-        }
-    }
-    else
+    if (!NewModule.ModuleMesh)
     {
-        // Default offset if no modules exist
-        NewModule.Offset = FTransform::Identity;
+        UE_LOG(LogTemp, Error, TEXT("Failed to load module mesh."));
+        return FReply::Handled();
     }
+
     HeadData.Modules.Add(NewModule);
-    PreviewViewport->AddModuleMesh(HeadData, NewModule);
+    FTLModule& StoredModule {HeadData.Modules.Last()};
+    StoredModule.ModuleMeshComponent = PreviewViewport->AddModuleMesh(HeadData, StoredModule);
 
+    RebuildModuleChain(HeadData);
     RefreshHeadList();
 
     return FReply::Handled();
@@ -1147,10 +1175,12 @@ void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadO
         switch (NewOrientation)
         {
             case ETLHeadOrientation::Vertical:
-                Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, Module.Offset.GetLocation().Y, ModuleIndex * 110.0f));
+                //TODO: Adjust the transform, not the offset
+                Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, Module.Offset.GetLocation().Y, ModuleIndex * 70.0f));
                 break;
             case ETLHeadOrientation::Horizontal:
-                Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, ModuleIndex * 110.0f, Module.Offset.GetLocation().Z));
+                //TODO: Adjust the transform, not the offset
+                Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, ModuleIndex * 70.0f, Module.Offset.GetLocation().Z));
                 break;
             default:
                 Module.Offset = FTransform::Identity; // Reset to identity if no valid orientation
