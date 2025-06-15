@@ -69,7 +69,6 @@ private:
     /** Mesh components spawned for each head */
     TArray<UStaticMeshComponent*> ModuleMeshComponents;
 
-    UMaterialInterface* BaseMaterial{ nullptr };
     TArray<UMaterialInstanceDynamic*> HeadDynMats;
     TArray<UMaterialInstanceDynamic*> ModuleDynMats;
 };

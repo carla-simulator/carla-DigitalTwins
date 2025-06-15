@@ -1,4 +1,5 @@
 #include "TrafficLights/Widgets/STrafficLightPreviewViewport.h"
+#include "TrafficLights/MaterialFactory.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInterface.h"
@@ -9,11 +10,6 @@
 
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 {
-    BaseMaterial = LoadObject<UMaterialInterface>(
-        nullptr,
-        TEXT("/Game/Materials/M_DynamicColor.M_DynamicColor")
-    );
-
     PreviewScene = MakeUnique<FPreviewScene>(FPreviewScene::ConstructionValues());
 
     ViewportClient = MakeShareable(new FEditorViewportClient(nullptr, PreviewScene.Get(), nullptr));
@@ -136,7 +132,14 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
     PreviewScene->AddComponent(Comp, ModuleWorldTransform);
 
     Comp->SetStaticMesh(ModuleData.ModuleMesh);
-    Comp->SetMaterial(0, BaseMaterial);
+    if (UMaterialInterface* BodyMat = FMaterialFactory::GetModuleBodyMaterial(Head, ModuleData))
+    {
+        Comp->SetMaterial(0, BodyMat);
+    }
+    if (UMaterialInterface* LightMat = FMaterialFactory::GetLightMaterial(ModuleData.LightType))
+    {
+        Comp->SetMaterial(1, LightMat);
+    }
 
     ModuleMeshComponents.Add(Comp);
 

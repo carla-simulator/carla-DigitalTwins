@@ -1,5 +1,6 @@
 #include "TrafficLights/Widgets/STrafficLightToolWidget.h"
 #include "TrafficLights/ModuleMeshFactory.h"
+#include "TrafficLights/MaterialFactory.h"
 #include "Containers/UnrealString.h"
 #include "Misc/AssertionMacros.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -128,7 +129,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 .OnClicked(this, &STrafficLightToolWidget::OnMoveModuleUpClicked, HeadIndex, ModuleIndex)
                 [
                     SNew(SImage)
-                    .Image(FAppStyle::Get().GetBrush("Icons.Up"))
+                    .Image(FAppStyle::Get().GetBrush("Icons.ArrowUp"))
                 ]
             ]
             + SVerticalBox::Slot()
@@ -141,7 +142,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 .OnClicked(this, &STrafficLightToolWidget::OnMoveModuleDownClicked, HeadIndex, ModuleIndex)
                 [
                     SNew(SImage)
-                    .Image(FAppStyle::Get().GetBrush("Icons.Down"))
+                    .Image(FAppStyle::Get().GetBrush("Icons.ArrowDown"))
                 ]
             ]
         ]
@@ -196,6 +197,11 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SComboBox<TSharedPtr<FString>>)
                     .OptionsSource(&LightTypeOptions)
+                    .InitiallySelectedItem(
+                        LightTypeOptions[
+                            static_cast<int32>( Heads[HeadIndex].Modules[ModuleIndex].LightType )
+                        ]
+                    )
                     .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
                         return SNew(STextBlock).Text(FText::FromString(*InItem));
                     })
@@ -203,8 +209,24 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         int32 Choice = LightTypeOptions.IndexOfByPredicate(
                             [&](auto& StrPtr){ return *StrPtr == *NewSel; }
                         );
-                        Heads[HeadIndex].Modules[ModuleIndex].LightType =
-                            static_cast<ETLLightType>(Choice);
+                        FTLHead& HeadData {Heads[HeadIndex]};
+                        FTLModule& Mod    {HeadData.Modules[ModuleIndex]};
+
+                        Mod.LightType = static_cast<ETLLightType>(Choice);
+
+                        UStaticMeshComponent* Comp = Mod.ModuleMeshComponent;
+                        if (Comp)
+                        {
+                            if (UMaterialInterface* NewLightMat = FMaterialFactory::GetLightMaterial(Mod.LightType))
+                            {
+                                Comp->SetMaterial(1, NewLightMat);
+                            }
+                        }
+
+                        RebuildModuleChain(HeadData);
+                        PreviewViewport->RecreateModuleMeshesForHead(HeadData);
+
+                        RefreshHeadList();
                     })
                     [
                         SNew(STextBlock)
@@ -628,7 +650,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
         [
             SNew(SComboBox<TSharedPtr<FString>>)
             .OptionsSource(&HeadStyleOptions)
-            .InitiallySelectedItem(HeadStyleOptions[(int32)Head.HeadStyle])
+            .InitiallySelectedItem(HeadStyleOptions[(int32)Head.Style])
             .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem)
             {
                 return SNew(STextBlock).Text(FText::FromString(*InItem));
@@ -636,12 +658,12 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
             .OnSelectionChanged_Lambda([this,Index](TSharedPtr<FString> New, ESelectInfo::Type)
             {
                 int32 Choice = HeadStyleOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
-                Heads[Index].HeadStyle = static_cast<ETLHeadStyle>(Choice);
-                PreviewViewport->SetHeadStyle(Index, Heads[Index].HeadStyle);
+                Heads[Index].Style = static_cast<ETLHeadStyle>(Choice);
+                PreviewViewport->SetHeadStyle(Index, Heads[Index].Style);
             })
             [
                 SNew(STextBlock)
-                .Text_Lambda([this,Index](){ return FText::FromString(*HeadStyleOptions[(int32)Heads[Index].HeadStyle]); })
+                .Text_Lambda([this,Index](){ return FText::FromString(*HeadStyleOptions[(int32)Heads[Index].Style]); })
             ]
         ]
 

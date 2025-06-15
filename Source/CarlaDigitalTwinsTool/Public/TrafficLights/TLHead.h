@@ -30,7 +30,7 @@ struct FTLHead
 
     /** Head style */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLHeadStyle HeadStyle { ETLHeadStyle::NorthAmerican };
+    ETLHeadStyle Style { ETLHeadStyle::NorthAmerican };
 
     /** Attachment type */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")

@@ -3,36 +3,58 @@
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLHeadOrientation.h"
+#include "TrafficLights/TLHeadStyle.h"
 #include "UObject/ConstructorHelpers.h"
 
 static TMap<FString, TSoftObjectPtr<UStaticMesh>> GMeshCache;
 
 static const TMap<FString, FString> GKeyToPath = {
-    { TEXT("Vertical_WithVisor"),
-      TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
-           "SM_TrafficLights_Black_Module_01.SM_TrafficLights_Black_Module_01") },
-    { TEXT("Vertical_NoVisor"),
-      TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
-           "SM_TrafficLights_Black_Module_02.SM_TrafficLights_Black_Module_02") },
-    { TEXT("Horizontal_WithVisor"),
-      TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
-           "SM_TrafficLights_Horizontal_Black_Module_01."
-           "SM_TrafficLights_Horizontal_Black_Module_01") },
-    { TEXT("Horizontal_NoVisor"),
-      TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
-           "SM_TrafficLights_Horizontal_Black_Module_02."
-           "SM_TrafficLights_Horizontal_Black_Module_02") }
+    // Vertical With Visor
+    { "Vertical_WithVisor_Black",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Black_Module_01.SM_TrafficLights_Black_Module_01" },
+    { "Vertical_WithVisor_Color",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Module_01.SM_TrafficLights_Module_01" },
+
+    // Vertical No Visor
+    { "Vertical_NoVisor_Black",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Black_Module_02.SM_TrafficLights_Black_Module_02" },
+    { "Vertical_NoVisor_Color",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Module_02.SM_TrafficLights_Module_02" },
+
+    // Horizontal With Visor
+    { "Horizontal_WithVisor_Black",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Horizontal_Black_Module_01."
+      "SM_TrafficLights_Horizontal_Black_Module_01" },
+    { "Horizontal_WithVisor_Color",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Horizontal_Module_01."
+      "SM_TrafficLights_Horizontal_Module_01" },
+
+    // Horizontal No Visor
+    { "Horizontal_NoVisor_Black",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Horizontal_Black_Module_02."
+      "SM_TrafficLights_Horizontal_Black_Module_02" },
+    { "Horizontal_NoVisor_Color",
+      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "SM_TrafficLights_Horizontal_Module_02."
+      "SM_TrafficLights_Horizontal_Module_02" },
 };
 
 UStaticMesh* FModuleMeshFactory::GetMeshForModule(const FTLHead& Head, const FTLModule& Module)
 {
-    const FString Key {FString::Printf(
-        TEXT("%s_%s"),
-        Head.Orientation == ETLHeadOrientation::Vertical
-            ? TEXT("Vertical")
-            : TEXT("Horizontal"),
-        Module.bHasVisor ? TEXT("WithVisor") : TEXT("NoVisor")
-    )};
+    const bool bUseBlack {Head.Style == ETLHeadStyle::European};
+    const FString StyleKey {bUseBlack ? TEXT("Black") : TEXT("Color")};
+
+    const FString Orient {Head.Orientation == ETLHeadOrientation::Vertical ? TEXT("Vertical") : TEXT("Horizontal")};
+    const FString Visor  {Module.bHasVisor ? TEXT("WithVisor") : TEXT("NoVisor")};
+
+    const FString Key = Orient + TEXT("_") + Visor + TEXT("_") + StyleKey;
 
     TSoftObjectPtr<UStaticMesh>* CachedPtr = GMeshCache.Find(Key);
     if (!CachedPtr)
@@ -41,12 +63,10 @@ UStaticMesh* FModuleMeshFactory::GetMeshForModule(const FTLHead& Head, const FTL
         if (!PathPtr)
         {
             UE_LOG(LogTemp, Error,
-                TEXT("ModuleMeshFactory: unknown key '%s'"), *Key);
+                TEXT("ModuleMeshFactory: clave desconocida '%s'"), *Key);
             return nullptr;
         }
-
-        FSoftObjectPath SoftPath(*PathPtr);
-        TSoftObjectPtr<UStaticMesh> SoftPtr{ SoftPath };
+        TSoftObjectPtr<UStaticMesh> SoftPtr{ FSoftObjectPath(*PathPtr) };
         GMeshCache.Add(Key, SoftPtr);
         CachedPtr = GMeshCache.Find(Key);
     }
