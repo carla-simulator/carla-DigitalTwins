@@ -9,11 +9,6 @@
 
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 {
-    CubeMesh = LoadObject<UStaticMesh>(
-        nullptr,
-        TEXT("/Engine/BasicShapes/Cube.Cube")
-    );
-
     BaseMaterial = LoadObject<UMaterialInterface>(
         nullptr,
         TEXT("/Game/Materials/M_DynamicColor.M_DynamicColor")
