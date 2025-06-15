@@ -52,6 +52,7 @@ private:
     FReply OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex);
     FReply OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex);
     void OnModuleVisorChanged(ECheckBoxState NewState, int32 HeadIndex, int32 ModuleIndex);
+    void OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex);
 
 private:
     FString GetHeadStyleText(ETLHeadStyle Style);

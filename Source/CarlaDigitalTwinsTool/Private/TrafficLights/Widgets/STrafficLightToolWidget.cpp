@@ -561,6 +561,29 @@ void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int3
     RefreshHeadList();
 }
 
+void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex)
+{
+    check(PreviewViewport.IsValid());
+    check(Heads.IsValidIndex(HeadIndex));
+
+    FTLHead& HeadData {Heads[HeadIndex]};
+    HeadData.Orientation = NewOrientation;
+
+    for (FTLModule& Mod : HeadData.Modules)
+    {
+        Mod.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+
+        if (Mod.ModuleMeshComponent)
+        {
+            Mod.ModuleMeshComponent->SetStaticMesh(Mod.ModuleMesh);
+        }
+    }
+
+    RebuildModuleChain(HeadData);
+    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
+    RefreshHeadList();
+}
+
 void STrafficLightToolWidget::RefreshHeadList()
 {
     HeadListContainer->ClearChildren();
@@ -646,28 +669,31 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
         ]
 
         // Orientation
-        + SVerticalBox::Slot().AutoHeight().Padding(2)
-        [ SNew(STextBlock).Text(FText::FromString("Orientation")) ]
-        + SVerticalBox::Slot().AutoHeight().Padding(2)
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        .Padding(2)
         [
             SNew(SComboBox<TSharedPtr<FString>>)
             .OptionsSource(&HeadOrientationOptions)
-            .InitiallySelectedItem(HeadOrientationOptions[(int32)Head.Orientation])
-            .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem)
-            {
+            .InitiallySelectedItem(HeadOrientationOptions[(int32)Heads[Index].Orientation])
+            .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
                 return SNew(STextBlock).Text(FText::FromString(*InItem));
             })
-            .OnSelectionChanged_Lambda([this,Index](TSharedPtr<FString> New, ESelectInfo::Type)
+            .OnSelectionChanged_Lambda([this, Index](TSharedPtr<FString> NewValue, ESelectInfo::Type )
             {
-                int32 Choice = HeadOrientationOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
-                Heads[Index].Orientation = static_cast<ETLHeadOrientation>(Choice);
-                ChangeModulesOrientation(Index, Heads[Index].Orientation);
-                UpdateModuleMeshesInViewport(Index);
-                RefreshHeadList();
+                int32 Choice = HeadOrientationOptions.IndexOfByPredicate(
+                    [&](auto& S){ return S == NewValue; }
+                );
+                ETLHeadOrientation NewOrient = static_cast<ETLHeadOrientation>(Choice);
+                OnHeadOrientationChanged(NewOrient, Index);
             })
             [
                 SNew(STextBlock)
-                .Text_Lambda([this,Index](){ return FText::FromString(*HeadOrientationOptions[(int32)Heads[Index].Orientation]); })
+                .Text_Lambda([this, Index]() {
+                    return FText::FromString(
+                        *HeadOrientationOptions[(int32)Heads[Index].Orientation]
+                    );
+                })
             ]
         ]
 
