@@ -122,7 +122,7 @@ FLinearColor STrafficLightPreviewViewport::InitialColorFor(ETLHeadStyle Style) c
             return FLinearColor::White;
         case ETLHeadStyle::Custom:
         default:
-            return FLinearColor(1,0,1); // Magenta for custom
+            return FLinearColor(1,0,1);
     }
 }
 

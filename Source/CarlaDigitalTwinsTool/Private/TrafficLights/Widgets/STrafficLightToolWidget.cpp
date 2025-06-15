@@ -470,31 +470,6 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 ]
             ]
 
-            //----------------------------------------------------------------
-            // Offset Scale (uniform)
-            //----------------------------------------------------------------
-            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-            [
-                SNew(STextBlock).Text(FText::FromString("Offset Scale"))
-            ]
-            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-            [
-                SNew(SSlider)
-                .MinValue(ScaleMin).MaxValue(ScaleMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetScale3D().X;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                    FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    M.Offset.SetScale3D(FVector(V));
-                    if (PreviewViewport.IsValid())
-                    {
-                        RebuildModuleChain(Heads[HeadIndex]);
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-
             // Delete Module button
             + SVerticalBox::Slot().AutoHeight().Padding(0,2)
             [
@@ -1131,16 +1106,15 @@ void STrafficLightToolWidget::RebuildModuleChain(FTLHead& Head)
         const FTransform PrevBase {Prev.Transform * Prev.Offset};
 
         const FTransform PrevLocal(
-            PrevSocket->RelativeRotation,
+            FQuat::Identity,
             PrevSocket->RelativeLocation,
-            PrevSocket->RelativeScale
+            FVector::OneVector
         );
         const FTransform CurrLocal(
-            CurrSocket->RelativeRotation,
+            FQuat::Identity,
             CurrSocket->RelativeLocation,
-            CurrSocket->RelativeScale
+            FVector::OneVector
         );
-
         const FTransform SnapDelta {PrevBase * PrevLocal * CurrLocal.Inverse()};
         Curr.Transform = SnapDelta;
         Curr.ModuleMeshComponent->SetRelativeTransform(Curr.Transform * Curr.Offset);
@@ -1269,6 +1243,12 @@ void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadO
 FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex)
 {
     OnMoveModuleUp(HeadIndex, ModuleIndex);
+    PreviewViewport->RemoveModuleMeshesForHead(HeadIndex);
+    const FTLHead& HeadData = Heads[HeadIndex];
+    for (const FTLModule& M : HeadData.Modules)
+    {
+        const_cast<FTLModule&>(M).ModuleMeshComponent = PreviewViewport->AddModuleMesh(HeadData, const_cast<FTLModule&>(M));
+    }
     RefreshHeadList();
     return FReply::Handled();
 }
@@ -1276,6 +1256,14 @@ FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 Mod
 FReply STrafficLightToolWidget::OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex)
 {
     OnMoveModuleDown(HeadIndex, ModuleIndex);
+    RebuildModuleChain(Heads[HeadIndex]);
+    PreviewViewport->RemoveModuleMeshesForHead(HeadIndex);
+    const FTLHead& HeadData = Heads[HeadIndex];
+    for (const FTLModule& M : HeadData.Modules)
+    {
+        const_cast<FTLModule&>(M).ModuleMeshComponent =
+            PreviewViewport->AddModuleMesh(HeadData, const_cast<FTLModule&>(M));
+    }
     RefreshHeadList();
     return FReply::Handled();
 }
@@ -1307,7 +1295,7 @@ void STrafficLightToolWidget::OnMoveModuleDown(int32 HeadIndex, int32 ModuleInde
 
     if (ModuleIndex >= 0 && ModuleIndex < HeadData.Modules.Num() - 1)
     {
-        HeadData.Modules.Swap(ModuleIndex, ModuleIndex - 1);
+        HeadData.Modules.Swap(ModuleIndex, ModuleIndex + 1);
         RebuildModuleChain(HeadData);
     }
 }
