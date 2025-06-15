@@ -110,339 +110,398 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
     return SNew(SBorder)
         .Padding(4)
     [
-        SNew(SVerticalBox)
+        SNew(SHorizontalBox)
 
-        + SVerticalBox::Slot()
-          .AutoHeight()
-          .Padding(0,0,0,4)
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .VAlign(VAlign_Center)
         [
-            SNew(STextBlock)
-            .Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
-            .Text(FText::FromString(
-                FString::Printf(TEXT("Module %d"), ModuleIndex)
-            ))
-        ]
-
-        // — Light Type ComboBox —
-        + SVerticalBox::Slot()
-          .AutoHeight()
-          .Padding(0,2)
-        [
-            SNew(SHorizontalBox)
-
-            // Label
-            + SHorizontalBox::Slot()
-              .AutoWidth()
-              .VAlign(VAlign_Center)
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
             [
-                SNew(STextBlock)
-                .Text(FText::FromString("Light Type:"))
-            ]
-
-            // Combo
-            + SHorizontalBox::Slot()
-              .AutoWidth()
-              .Padding(8,0)
-            [
-                SNew(SComboBox<TSharedPtr<FString>>)
-                .OptionsSource(&LightTypeOptions)
-                .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
-                    return SNew(STextBlock).Text(FText::FromString(*InItem));
-                })
-                .OnSelectionChanged_Lambda([this, HeadIndex, ModuleIndex](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
-                    int32 Choice = LightTypeOptions.IndexOfByPredicate(
-                        [&](auto& StrPtr){ return *StrPtr == *NewSel; }
-                    );
-                    Heads[HeadIndex].Modules[ModuleIndex].LightType =
-                        static_cast<ETLLightType>(Choice);
-                })
+                SNew(SButton)
+                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
+                .ContentPadding(2.0f)
+                .IsEnabled(ModuleIndex > 0)
+                .OnClicked(this, &STrafficLightToolWidget::OnMoveModuleUpClicked, HeadIndex, ModuleIndex)
                 [
-                    SNew(STextBlock)
-                    .Text_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return FText::FromString(
-                            GetLightTypeText(
-                                Heads[HeadIndex].Modules[ModuleIndex].LightType
-                            )
-                        );
-                    })
+                    SNew(SImage)
+                    .Image(FAppStyle::Get().GetBrush("Icons.Up"))
+                ]
+            ]
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            [
+                SNew(SButton)
+                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
+                .ContentPadding(2.0f)
+                .IsEnabled(ModuleIndex < Heads[HeadIndex].Modules.Num() - 1)
+                .OnClicked(this, &STrafficLightToolWidget::OnMoveModuleDownClicked, HeadIndex, ModuleIndex)
+                [
+                    SNew(SImage)
+                    .Image(FAppStyle::Get().GetBrush("Icons.Down"))
                 ]
             ]
         ]
 
-        // — Has Visor Checkbox —
-        + SVerticalBox::Slot()
-          .AutoHeight()
-          .Padding(0,2)
+        + SHorizontalBox::Slot()
+        .FillWidth(1.0f)
+        .VAlign(VAlign_Center)
         [
-            SNew(SCheckBox)
-            .IsChecked_Lambda([&Module]() {
-                return Module.bHasVisor
-                    ? ECheckBoxState::Checked
-                    : ECheckBoxState::Unchecked;
-            })
-            .OnCheckStateChanged_Lambda([this, HeadIndex, ModuleIndex](ECheckBoxState NewState) {
-                Heads[HeadIndex].Modules[ModuleIndex].bHasVisor =
-                    (NewState == ECheckBoxState::Checked);
-            })
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,0,0,4)
             [
                 SNew(STextBlock)
-                .Text(FText::FromString("Has Visor"))
+                .Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
+                .Text(FText::FromString(
+                    FString::Printf(TEXT("Module %d"), ModuleIndex)
+                ))
             ]
-        ]
 
-        // — Offset Location: Numeric + Slider per axis —
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(STextBlock).Text(FText::FromString("Offset Location"))
-        ]
-
-        // X axis
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SHorizontalBox)
-
-            // Label X
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,0,0,4)
             [
-                SNew(STextBlock).Text(FText::FromString("X"))
+                SNew(STextBlock)
+                .Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
+                .Text(FText::FromString(
+                    FString::Printf(TEXT("Module %d"), ModuleIndex)
+                ))
             ]
 
-            // Numeric Entry
-            + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
+            // — Light Type ComboBox —
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,2)
             [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(PosMin).MaxValue(PosMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.X = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                {
-                    UpdateModuleMeshesInViewport(HeadIndex);
-                }
-                })
+                SNew(SHorizontalBox)
+
+                // Label
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString("Light Type:"))
+                ]
+
+                // Combo
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .Padding(8,0)
+                [
+                    SNew(SComboBox<TSharedPtr<FString>>)
+                    .OptionsSource(&LightTypeOptions)
+                    .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
+                        return SNew(STextBlock).Text(FText::FromString(*InItem));
+                    })
+                    .OnSelectionChanged_Lambda([this, HeadIndex, ModuleIndex](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
+                        int32 Choice = LightTypeOptions.IndexOfByPredicate(
+                            [&](auto& StrPtr){ return *StrPtr == *NewSel; }
+                        );
+                        Heads[HeadIndex].Modules[ModuleIndex].LightType =
+                            static_cast<ETLLightType>(Choice);
+                    })
+                    [
+                        SNew(STextBlock)
+                        .Text_Lambda([this, HeadIndex, ModuleIndex]() {
+                            return FText::FromString(
+                                GetLightTypeText(
+                                    Heads[HeadIndex].Modules[ModuleIndex].LightType
+                                )
+                            );
+                        })
+                    ]
+                ]
             ]
 
-            // Slider
-            + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
+            // — Has Visor Checkbox —
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,2)
+            [
+                SNew(SCheckBox)
+                .IsChecked_Lambda([&Module]() {
+                    return Module.bHasVisor
+                        ? ECheckBoxState::Checked
+                        : ECheckBoxState::Unchecked;
+                })
+                .OnCheckStateChanged_Lambda([this, HeadIndex, ModuleIndex](ECheckBoxState NewState) {
+                    Heads[HeadIndex].Modules[ModuleIndex].bHasVisor =
+                        (NewState == ECheckBoxState::Checked);
+                })
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString("Has Visor"))
+                ]
+            ]
+
+            // — Offset Location: Numeric + Slider per axis —
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(STextBlock).Text(FText::FromString("Offset Location"))
+            ]
+
+            // X axis
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+
+                // Label X
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
+                [
+                    SNew(STextBlock).Text(FText::FromString("X"))
+                ]
+
+                // Numeric Entry
+                + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.X = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+
+                // Slider
+                + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
+                [
+                    SNew(SSlider)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.X = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+            ]
+
+            // Y axis
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
+                [
+                    SNew(STextBlock).Text(FText::FromString("Y"))
+                ]
+                + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.Y = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+                + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
+                [
+                    SNew(SSlider)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.Y = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Heads[HeadIndex]);
+                        UpdateModuleMeshesInViewport(HeadIndex);
+                    }
+                    })
+                ]
+            ]
+
+            // Z axis
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
+                [
+                    SNew(STextBlock).Text(FText::FromString("Z"))
+                ]
+                + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.Z = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+                + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
+                [
+                    SNew(SSlider)
+                    .MinValue(PosMin).MaxValue(PosMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
+                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FVector L = M.Offset.GetLocation();
+                        L.Z = V;
+                        M.Offset.SetLocation(L);
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+            ]
+
+            //----------------------------------------------------------------
+            // Offset Rotation (Pitch, Yaw, Roll)
+            //----------------------------------------------------------------
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(STextBlock).Text(FText::FromString("Offset Rotation"))
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+
+                // Pitch
+                + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(RotMin).MaxValue(RotMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Pitch;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
+                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FRotator R = M.Offset.Rotator();
+                        R.Pitch = V;
+                        M.Offset.SetRotation(FQuat(R));
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+
+                // Yaw
+                + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(RotMin).MaxValue(RotMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Yaw;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
+                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FRotator R = M.Offset.Rotator();
+                        R.Yaw = V;
+                        M.Offset.SetRotation(FQuat(R));
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+
+                // Roll
+                + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
+                [
+                    SNew(SNumericEntryBox<float>)
+                    .MinValue(RotMin).MaxValue(RotMax)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Roll;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
+                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
+                        FRotator R = M.Offset.Rotator();
+                        R.Roll = V;
+                        M.Offset.SetRotation(FQuat(R));
+                        if (PreviewViewport.IsValid())
+                        {
+                            RebuildModuleChain(Heads[HeadIndex]);
+                            UpdateModuleMeshesInViewport(HeadIndex);
+                        }
+                    })
+                ]
+            ]
+
+            //----------------------------------------------------------------
+            // Offset Scale (uniform)
+            //----------------------------------------------------------------
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+            [
+                SNew(STextBlock).Text(FText::FromString("Offset Scale"))
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
             [
                 SNew(SSlider)
-                .MinValue(PosMin).MaxValue(PosMax)
+                .MinValue(ScaleMin).MaxValue(ScaleMax)
                 .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.X = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-        ]
-
-        // Y axis
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
-            [
-                SNew(STextBlock).Text(FText::FromString("Y"))
-            ]
-            + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
-            [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(PosMin).MaxValue(PosMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.Y = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-            + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
-            [
-                SNew(SSlider)
-                .MinValue(PosMin).MaxValue(PosMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.Y = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                {
-                    UpdateModuleMeshesInViewport(HeadIndex);
-                }
-                })
-            ]
-        ]
-
-        // Z axis
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,8,0)
-            [
-                SNew(STextBlock).Text(FText::FromString("Z"))
-            ]
-            + SHorizontalBox::Slot().FillWidth(0.3f).Padding(2,0)
-            [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(PosMin).MaxValue(PosMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.Z = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-            + SHorizontalBox::Slot().FillWidth(0.7f).Padding(2,0)
-            [
-                SNew(SSlider)
-                .MinValue(PosMin).MaxValue(PosMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                    auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FVector L = M.Offset.GetLocation();
-                    L.Z = V;
-                    M.Offset.SetLocation(L);
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-        ]
-
-
-        //----------------------------------------------------------------
-        // Offset Rotation (Pitch, Yaw, Roll)
-        //----------------------------------------------------------------
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(STextBlock).Text(FText::FromString("Offset Rotation"))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SHorizontalBox)
-
-            // Pitch
-            + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
-            [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(RotMin).MaxValue(RotMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Pitch;
+                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetScale3D().X;
                 })
                 .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
                     FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FRotator R = M.Offset.Rotator();
-                    R.Pitch = V;
-                    M.Offset.SetRotation(FQuat(R));
+                    M.Offset.SetScale3D(FVector(V));
                     if (PreviewViewport.IsValid())
                     {
+                        RebuildModuleChain(Heads[HeadIndex]);
                         UpdateModuleMeshesInViewport(HeadIndex);
                     }
                 })
             ]
 
-            // Yaw
-            + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
+            // Delete Module button
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)
             [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(RotMin).MaxValue(RotMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Yaw;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                    FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FRotator R = M.Offset.Rotator();
-                    R.Yaw = V;
-                    M.Offset.SetRotation(FQuat(R));
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
+                SNew(SButton)
+                .Text(FText::FromString("Delete Module"))
+                .OnClicked(this, &STrafficLightToolWidget::OnDeleteModuleClicked, HeadIndex, ModuleIndex)
             ]
-
-            // Roll
-            + SHorizontalBox::Slot().FillWidth(1).Padding(2,0)
-            [
-                SNew(SNumericEntryBox<float>)
-                .MinValue(RotMin).MaxValue(RotMax)
-                .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Roll;
-                })
-                .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                    FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                    FRotator R = M.Offset.Rotator();
-                    R.Roll = V;
-                    M.Offset.SetRotation(FQuat(R));
-                    if (PreviewViewport.IsValid())
-                    {
-                        UpdateModuleMeshesInViewport(HeadIndex);
-                    }
-                })
-            ]
-        ]
-
-        //----------------------------------------------------------------
-        // Offset Scale (uniform)
-        //----------------------------------------------------------------
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(STextBlock).Text(FText::FromString("Offset Scale"))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SSlider)
-            .MinValue(ScaleMin).MaxValue(ScaleMax)
-            .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetScale3D().X;
-            })
-            .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                M.Offset.SetScale3D(FVector(V));
-                if (PreviewViewport.IsValid())
-                {
-                    UpdateModuleMeshesInViewport(HeadIndex);
-                }
-            })
-        ]
-
-        // Delete Module button
-        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
-        [
-            SNew(SButton)
-            .Text(FText::FromString("Delete Module"))
-            .OnClicked(this, &STrafficLightToolWidget::OnDeleteModuleClicked, HeadIndex, ModuleIndex)
         ]
     ];
 }
@@ -1037,39 +1096,57 @@ void STrafficLightToolWidget::RebuildModuleChain(FTLHead& Head)
         return;
     }
 
-    Head.Modules[0].Transform = FTransform::Identity;
-    if (Head.Modules[0].ModuleMeshComponent)
+    const FName EndSocketName   {FName("Socket2")};
+    const FName BeginSocketName {FName("Socket1")};
+
     {
-        Head.Modules[0].ModuleMeshComponent->SetRelativeTransform(Head.Modules[0].Transform * Head.Modules[0].Offset);
+        FTLModule& M0 {Head.Modules[0]};
+        M0.Transform = FTransform::Identity;
+        if (M0.ModuleMeshComponent)
+        {
+            M0.ModuleMeshComponent->SetRelativeTransform(M0.Transform * M0.Offset);
+        }
     }
 
     for (int32 i {1}; i < Head.Modules.Num(); ++i)
     {
-        const FTLModule& PrevModule {Head.Modules[i - 1]};
-        FTLModule& CurrModule {Head.Modules[i]};
+        const FTLModule& Prev {Head.Modules[i - 1]};
+        FTLModule& Curr {Head.Modules[i]};
 
-        const FName EndSocketName {FName("Socket2")};
-        const FName BeginSocketName {FName("Socket1")};
-
-        if (PrevModule.ModuleMeshComponent && CurrModule.ModuleMeshComponent)
+        if (!Prev.ModuleMeshComponent || !Curr.ModuleMeshComponent)
         {
-            if (PrevModule.ModuleMeshComponent->DoesSocketExist(EndSocketName) && CurrModule.ModuleMeshComponent->DoesSocketExist(BeginSocketName))
-            {
-                const FTransform EndSocketLocal {PrevModule.ModuleMeshComponent->GetSocketTransform(EndSocketName, RTS_Component)};
-                const FTransform EndSocketWorldRelativeToHead {PrevModule.Transform * EndSocketLocal};
-                const FTransform BeginSocketLocal {CurrModule.ModuleMeshComponent->GetSocketTransform(BeginSocketName, RTS_Component)};
-                const FTransform SnapDelta {EndSocketWorldRelativeToHead * BeginSocketLocal.Inverse()};
-
-                CurrModule.Transform = SnapDelta;
-                CurrModule.ModuleMeshComponent->SetRelativeTransform(CurrModule.Transform * CurrModule.Offset);
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("One of the sockets is missing in module %d"), i);
-            }
+            UE_LOG(LogTemp, Warning, TEXT("Missing component at module %d"), i);
+            continue;
         }
+
+        const UStaticMeshSocket* PrevSocket {Prev.ModuleMesh->FindSocket(EndSocketName)};
+        const UStaticMeshSocket* CurrSocket {Curr.ModuleMesh->FindSocket(BeginSocketName)};
+
+        if (!PrevSocket || !CurrSocket)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Missing socket at module %d"), i);
+            continue;
+        }
+
+        const FTransform PrevBase {Prev.Transform * Prev.Offset};
+
+        const FTransform PrevLocal(
+            PrevSocket->RelativeRotation,
+            PrevSocket->RelativeLocation,
+            PrevSocket->RelativeScale
+        );
+        const FTransform CurrLocal(
+            CurrSocket->RelativeRotation,
+            CurrSocket->RelativeLocation,
+            CurrSocket->RelativeScale
+        );
+
+        const FTransform SnapDelta {PrevBase * PrevLocal * CurrLocal.Inverse()};
+        Curr.Transform = SnapDelta;
+        Curr.ModuleMeshComponent->SetRelativeTransform(Curr.Transform * Curr.Offset);
     }
 }
+
 
 FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
 {
@@ -1186,5 +1263,51 @@ void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadO
                 Module.Offset = FTransform::Identity; // Reset to identity if no valid orientation
                 break;
         }
+    }
+}
+
+FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex)
+{
+    OnMoveModuleUp(HeadIndex, ModuleIndex);
+    RefreshHeadList();
+    return FReply::Handled();
+}
+
+FReply STrafficLightToolWidget::OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex)
+{
+    OnMoveModuleDown(HeadIndex, ModuleIndex);
+    RefreshHeadList();
+    return FReply::Handled();
+}
+
+void STrafficLightToolWidget::OnMoveModuleUp(int32 HeadIndex, int32 ModuleIndex)
+{
+    if (!Heads.IsValidIndex(HeadIndex))
+    {
+        return;
+    }
+
+    FTLHead& HeadData = Heads[HeadIndex];
+
+    if (ModuleIndex > 0 && ModuleIndex < HeadData.Modules.Num())
+    {
+        HeadData.Modules.Swap(ModuleIndex, ModuleIndex - 1);
+        RebuildModuleChain(HeadData);
+    }
+}
+
+void STrafficLightToolWidget::OnMoveModuleDown(int32 HeadIndex, int32 ModuleIndex)
+{
+    if (!Heads.IsValidIndex(HeadIndex))
+    {
+        return;
+    }
+
+    FTLHead& HeadData = Heads[HeadIndex];
+
+    if (ModuleIndex >= 0 && ModuleIndex < HeadData.Modules.Num() - 1)
+    {
+        HeadData.Modules.Swap(ModuleIndex, ModuleIndex - 1);
+        RebuildModuleChain(HeadData);
     }
 }

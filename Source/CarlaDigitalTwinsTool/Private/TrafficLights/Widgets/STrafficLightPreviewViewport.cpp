@@ -60,7 +60,9 @@ void STrafficLightPreviewViewport::SetHeadStyle(int32 Index, ETLHeadStyle Style)
 void STrafficLightPreviewViewport::AddBackplateMesh(int32 HeadIndex)
 {
     if (!HeadMeshComponents.IsValidIndex(HeadIndex))
+    {
         return;
+    }
 
     if (BackplateMeshComponents.IsValidIndex(HeadIndex) &&
         BackplateMeshComponents[HeadIndex] != nullptr)
@@ -126,35 +128,20 @@ FLinearColor STrafficLightPreviewViewport::InitialColorFor(ETLHeadStyle Style) c
 
 UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead& Head, const FTLModule& ModuleData)
 {
-    const FTransform ModuleWorldTransform {ModuleData.Offset * Head.Transform};
+    const FTransform ModuleWorldTransform {ModuleData.Transform * Head.Transform * ModuleData.Offset};
 
-    UStaticMeshComponent* Comp { NewObject<UStaticMeshComponent>(GetTransientPackage()) };
-
+    UWorld* World {PreviewScene->GetWorld()};
+    UObject* LevelOuter {World->PersistentLevel};
+    UStaticMeshComponent* Comp {NewObject<UStaticMeshComponent>(LevelOuter, NAME_None, RF_Transient)};
     if (!Comp)
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to create StaticMeshComponent for module"));
         return nullptr;
     }
-    Comp->RegisterComponentWithWorld(PreviewScene->GetWorld());
-    Comp->SetStaticMesh(ModuleData.ModuleMesh);
-    Comp->SetMaterial(0, BaseMaterial);
     PreviewScene->AddComponent(Comp, ModuleWorldTransform);
 
-    // TODO: Remove this when we have proper assets for each module
-    if (BaseMaterial)
-    {
-        UMaterialInstanceDynamic* Dyn {UMaterialInstanceDynamic::Create(BaseMaterial, Comp)};
-        FLinearColor C {FLinearColor::White};
-        switch (ModuleData.LightType)
-        {
-            case ETLLightType::Red:    C = FLinearColor::Red;    break;
-            case ETLLightType::Yellow: C = FLinearColor::Yellow; break;
-            case ETLLightType::Green:  C = FLinearColor::Green;  break;
-            default:                   C = FLinearColor::Gray;   break;
-        }
-        Dyn->SetVectorParameterValue(TEXT("Color"), C);
-        Comp->SetMaterial(0, Dyn);
-    }
+    Comp->SetStaticMesh(ModuleData.ModuleMesh);
+    Comp->SetMaterial(0, BaseMaterial);
 
     ModuleMeshComponents.Add(Comp);
 
@@ -167,6 +154,7 @@ void STrafficLightPreviewViewport::RemoveModuleMeshesForHead(int32 HeadIndex)
     {
         if (Comp)
         {
+            PreviewScene->RemoveComponent(Comp);
             Comp->DestroyComponent();
         }
     }

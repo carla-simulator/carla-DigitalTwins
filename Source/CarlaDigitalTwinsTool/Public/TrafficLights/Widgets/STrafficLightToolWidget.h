@@ -47,7 +47,10 @@ private:
     FReply OnDeleteModuleClicked(int32 HeadIndex, int32 ModuleIndex);
     void UpdateModuleMeshesInViewport(int32 HeadIndex);
     void ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation);
-
+    void OnMoveModuleUp(int32 HeadIndex, int32 ModuleIndex);
+    void OnMoveModuleDown(int32 HeadIndex, int32 ModuleIndex);
+    FReply OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex);
+    FReply OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex);
 
 private:
     FString GetHeadStyleText(ETLHeadStyle Style);

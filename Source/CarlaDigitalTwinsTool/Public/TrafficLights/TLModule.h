@@ -16,7 +16,10 @@ struct FTLModule
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
-    UStaticMesh* ModuleMesh;
+    UStaticMesh* ModuleMesh { nullptr };
+
+    UPROPERTY(Transient)
+    UStaticMeshComponent* ModuleMeshComponent { nullptr };
 
     /** Local transform relative to parent head */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
