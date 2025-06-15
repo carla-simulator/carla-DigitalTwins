@@ -1,4 +1,5 @@
 #include "TrafficLights/Widgets/STrafficLightToolWidget.h"
+#include "TrafficLights/ModuleMeshFactory.h"
 #include "Containers/UnrealString.h"
 #include "Misc/AssertionMacros.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -224,15 +225,12 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
             .Padding(0,2)
             [
                 SNew(SCheckBox)
-                .IsChecked_Lambda([&Module]() {
-                    return Module.bHasVisor
+                .IsChecked_Lambda([this, HeadIndex, ModuleIndex]() {
+                    return Heads[HeadIndex].Modules[ModuleIndex].bHasVisor
                         ? ECheckBoxState::Checked
                         : ECheckBoxState::Unchecked;
                 })
-                .OnCheckStateChanged_Lambda([this, HeadIndex, ModuleIndex](ECheckBoxState NewState) {
-                    Heads[HeadIndex].Modules[ModuleIndex].bHasVisor =
-                        (NewState == ECheckBoxState::Checked);
-                })
+                .OnCheckStateChanged(this, &STrafficLightToolWidget::OnModuleVisorChanged, HeadIndex, ModuleIndex)
                 [
                     SNew(STextBlock)
                     .Text(FText::FromString("Has Visor"))
@@ -523,15 +521,44 @@ FReply STrafficLightToolWidget::OnAddHeadClicked()
 
 FReply STrafficLightToolWidget::OnDeleteHeadClicked(int32 Index)
 {
+    check(PreviewViewport.IsValid());
     check(Heads.IsValidIndex(Index));
-    for (int32 ModuleIndex = 0; ModuleIndex < Heads[Index].Modules.Num(); ++ModuleIndex)
-    {
-        Heads[Index].Modules.RemoveAt(ModuleIndex);
-        PreviewViewport->RemoveModuleMeshesForHead(ModuleIndex);
-    }
+
+    Heads[Index].Modules.Empty();
+    PreviewViewport->ClearModuleMeshes();
     Heads.RemoveAt(Index);
     RefreshHeadList();
     return FReply::Handled();
+}
+
+void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int32 HeadIndex, int32 ModuleIndex)
+{
+    check(PreviewViewport.IsValid());
+    check(Heads.IsValidIndex(HeadIndex));
+
+    FTLHead& HeadData {Heads[HeadIndex]};
+    check(HeadData.Modules.IsValidIndex(ModuleIndex));
+
+    FTLModule& Mod {HeadData.Modules[ModuleIndex]};
+    Mod.bHasVisor = (NewState == ECheckBoxState::Checked);
+
+    UStaticMesh* NewMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+    if (!NewMesh)
+    {
+        UE_LOG(LogTemp, Error, TEXT("OnModuleVisorChanged: failed to get mesh for head %d, module %d"), HeadIndex, ModuleIndex);
+        return;
+    }
+
+    Mod.ModuleMesh = NewMesh;
+    if (Mod.ModuleMeshComponent)
+    {
+        Mod.ModuleMeshComponent->SetStaticMesh(NewMesh);
+    }
+
+    RebuildModuleChain(HeadData);
+    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
+
+    RefreshHeadList();
 }
 
 void STrafficLightToolWidget::RefreshHeadList()
@@ -1121,7 +1148,6 @@ void STrafficLightToolWidget::RebuildModuleChain(FTLHead& Head)
     }
 }
 
-
 FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
 {
     check(Heads.IsValidIndex(HeadIndex));
@@ -1132,10 +1158,7 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
     NewModule.ModuleID = FGuid::NewGuid();
     NewModule.Offset = FTransform::Identity;
 
-    NewModule.ModuleMesh = Cast<UStaticMesh>(StaticLoadObject(
-        UStaticMesh::StaticClass(), nullptr,
-        TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Black_Module_01.SM_TrafficLights_Black_Module_01")
-    ));
+    NewModule.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, NewModule);
 
     if (!NewModule.ModuleMesh)
     {
@@ -1159,7 +1182,7 @@ FReply STrafficLightToolWidget::OnDeleteModuleClicked(int32 HeadIndex, int32 Mod
     check(Heads[HeadIndex].Modules.IsValidIndex(ModuleIndex));
 
     Heads[HeadIndex].Modules.RemoveAt(ModuleIndex);
-    PreviewViewport->RemoveModuleMeshForHead(HeadIndex, ModuleIndex);
+    PreviewViewport->ClearModuleMeshes();
     ChangeModulesOrientation(HeadIndex, Heads[HeadIndex].Orientation);
     UpdateModuleMeshesInViewport(HeadIndex);
     RefreshHeadList();
@@ -1198,13 +1221,7 @@ void STrafficLightToolWidget::UpdateModuleMeshesInViewport(int32 HeadIndex)
 {
     check(PreviewViewport.IsValid());
     check(Heads.IsValidIndex(HeadIndex));
-
-    PreviewViewport->RemoveModuleMeshesForHead(HeadIndex);
-    const FTLHead& HeadData = Heads[HeadIndex];
-    for (const FTLModule& Mod : HeadData.Modules)
-    {
-        PreviewViewport->AddModuleMesh(HeadData, Mod);
-    }
+    PreviewViewport->RecreateModuleMeshesForHead(Heads[HeadIndex]);
 }
 
 void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation)
@@ -1243,12 +1260,9 @@ void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadO
 FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex)
 {
     OnMoveModuleUp(HeadIndex, ModuleIndex);
-    PreviewViewport->RemoveModuleMeshesForHead(HeadIndex);
-    const FTLHead& HeadData = Heads[HeadIndex];
-    for (const FTLModule& M : HeadData.Modules)
-    {
-        const_cast<FTLModule&>(M).ModuleMeshComponent = PreviewViewport->AddModuleMesh(HeadData, const_cast<FTLModule&>(M));
-    }
+    FTLHead& HeadData {Heads[HeadIndex]};
+    RebuildModuleChain(HeadData);
+    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
     RefreshHeadList();
     return FReply::Handled();
 }
@@ -1256,14 +1270,9 @@ FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 Mod
 FReply STrafficLightToolWidget::OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex)
 {
     OnMoveModuleDown(HeadIndex, ModuleIndex);
-    RebuildModuleChain(Heads[HeadIndex]);
-    PreviewViewport->RemoveModuleMeshesForHead(HeadIndex);
-    const FTLHead& HeadData = Heads[HeadIndex];
-    for (const FTLModule& M : HeadData.Modules)
-    {
-        const_cast<FTLModule&>(M).ModuleMeshComponent =
-            PreviewViewport->AddModuleMesh(HeadData, const_cast<FTLModule&>(M));
-    }
+    FTLHead& HeadData {Heads[HeadIndex]};
+    RebuildModuleChain(HeadData);
+    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
     RefreshHeadList();
     return FReply::Handled();
 }

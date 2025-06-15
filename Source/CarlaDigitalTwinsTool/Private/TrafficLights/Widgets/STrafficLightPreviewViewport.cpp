@@ -143,7 +143,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
     return Comp;
 }
 
-void STrafficLightPreviewViewport::RemoveModuleMeshesForHead(int32 HeadIndex)
+void STrafficLightPreviewViewport::ClearModuleMeshes()
 {
     for (UStaticMeshComponent* Comp : ModuleMeshComponents)
     {
@@ -156,16 +156,12 @@ void STrafficLightPreviewViewport::RemoveModuleMeshesForHead(int32 HeadIndex)
     ModuleMeshComponents.Empty();
 }
 
-void STrafficLightPreviewViewport::RemoveModuleMeshForHead(int32 HeadIndex, int32 ModuleIndex)
+void STrafficLightPreviewViewport::RecreateModuleMeshesForHead(FTLHead& Head)
 {
-    check(ModuleMeshComponents.IsValidIndex(ModuleIndex));
-    UStaticMeshComponent* Comp {ModuleMeshComponents[ModuleIndex]};
-    if (!Comp)
+    ClearModuleMeshes();
+
+    for (FTLModule& ModuleData : Head.Modules)
     {
-        UE_LOG(LogTemp, Warning, TEXT("RemoveModuleMeshForHead: Invalid module index %d"), ModuleIndex);
-        ModuleMeshComponents.RemoveAt(ModuleIndex);
-        return;
+        ModuleData.ModuleMeshComponent = AddModuleMesh(Head, ModuleData);
     }
-    Comp->DestroyComponent();
-    ModuleMeshComponents.RemoveAt(ModuleIndex);
 }
