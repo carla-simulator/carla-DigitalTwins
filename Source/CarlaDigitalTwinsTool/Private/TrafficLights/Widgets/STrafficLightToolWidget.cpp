@@ -286,29 +286,30 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
             .AutoHeight()
             .Padding(0,2)
             [
-            SNew(SBorder)
-            .BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-            .Padding(4)
-            [
-                SNew(SColorPicker)
-                .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]()
-                {
-                    return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
-                })
-                .UseAlpha(false)
-                .OnlyRefreshOnMouseUp(false)
-                .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor)
-                {
-                    auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
-                    Mod.EmissiveColor = NewColor;
-                    if (Mod.LightMID)
+                SNew(SBorder)
+                .BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+                .Padding(4)
+                [
+                    SNew(SColorPicker)
+                    .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]()
                     {
-                    Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
-                    }
-                    PreviewViewport->Rebuild(Heads);
-                })
+                        return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
+                    })
+                    .UseAlpha(false)
+                    .OnlyRefreshOnMouseUp(false)
+                    .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor)
+                    {
+                        auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
+                        Mod.EmissiveColor = NewColor;
+                        if (Mod.LightMID)
+                        {
+                        Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                        }
+                        PreviewViewport->Rebuild(Heads);
+                    })
+                ]
             ]
-            ]
+
             // — Has Visor Checkbox —
             + SVerticalBox::Slot()
             .AutoHeight()
@@ -592,6 +593,10 @@ FReply STrafficLightToolWidget::OnAddHeadClicked()
     const int32 Index {Heads.Add(NewHead)};
     OnAddModuleClicked(Index);
     Rebuild();
+    if (Heads.Num() == 1)
+    {
+        PreviewViewport->ResetFrame(Heads[0].Modules[0].ModuleMeshComponent);
+    }
     return FReply::Handled();
 }
 
@@ -1064,9 +1069,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.Rotator().Pitch;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FRotator R{ Heads[Index].Offset.Rotator() };
+                    auto& Head = Heads[Index];
+                    FRotator R{ Head.Offset.Rotator() };
                     R.Pitch = V;
-                    Heads[Index].Offset.SetRotation(FQuat{ R });
+                    Head.Offset.SetRotation(FQuat{ R });
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
 
@@ -1077,9 +1087,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.Rotator().Yaw;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FRotator R{ Heads[Index].Offset.Rotator() };
+                    auto& Head = Heads[Index];
+                    FRotator R{ Head.Offset.Rotator() };
                     R.Yaw = V;
-                    Heads[Index].Offset.SetRotation(FQuat{ R });
+                    Head.Offset.SetRotation(FQuat{ R });
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
 
@@ -1090,9 +1105,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.Rotator().Roll;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FRotator R{ Heads[Index].Offset.Rotator() };
+                    auto& Head = Heads[Index];
+                    FRotator R{ Head.Offset.Rotator() };
                     R.Roll = V;
-                    Heads[Index].Offset.SetRotation(FQuat{ R });
+                    Head.Offset.SetRotation(FQuat{ R });
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
         ]
@@ -1160,9 +1180,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                 SNew(SNumericEntryBox<float>)
                 .Value_Lambda([this,Index]() { return Heads[Index].Offset.GetScale3D().X; })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector S{ Heads[Index].Offset.GetScale3D() };
+                    auto& Head = Heads[Index];
+                    FVector S{ Head.Offset.GetScale3D() };
                     S.X = V;
-                    Heads[Index].Offset.SetScale3D(S);
+                    Head.Offset.SetScale3D(S);
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
 
@@ -1171,9 +1196,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                 SNew(SNumericEntryBox<float>)
                 .Value_Lambda([this,Index]() { return Heads[Index].Offset.GetScale3D().Y; })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector S{ Heads[Index].Offset.GetScale3D() };
+                    auto& Head = Heads[Index];
+                    FVector S{ Head.Offset.GetScale3D() };
                     S.Y = V;
-                    Heads[Index].Offset.SetScale3D(S);
+                    Head.Offset.SetScale3D(S);
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
 
@@ -1182,9 +1212,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                 SNew(SNumericEntryBox<float>)
                 .Value_Lambda([this,Index]() { return Heads[Index].Offset.GetScale3D().Z; })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector S{ Heads[Index].Offset.GetScale3D() };
+                    auto& Head = Heads[Index];
+                    FVector S{ Head.Offset.GetScale3D() };
                     S.Z = V;
-                    Heads[Index].Offset.SetScale3D(S);
+                    Head.Offset.SetScale3D(S);
+                    if (PreviewViewport.IsValid())
+                    {
+                        Rebuild();
+                    }
                 })
             ]
         ]

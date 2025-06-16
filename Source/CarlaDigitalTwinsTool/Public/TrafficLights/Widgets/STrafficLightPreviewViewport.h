@@ -45,10 +45,10 @@ public:
     UStaticMeshComponent* AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData);
     void ClearModuleMeshes();
     void Rebuild(TArray<FTLHead>& Heads);
+    void ResetFrame(const UStaticMeshComponent* Comp);
 
 private:
     FLinearColor InitialColorFor(ETLHeadStyle Style) const;
-
 
 private:
     /** Holds the preview scene (off-screen world) */

@@ -16,7 +16,7 @@ void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
     ViewportClient->bSetListenerPosition = false;
     ViewportClient->SetRealtime(false);
     ViewportClient->SetViewLocation(FVector(-300, 0, 150));
-    ViewportClient->SetViewRotation(FRotator(-15, 0, 0));
+    ViewportClient->SetViewRotation(FRotator(0, 0, 0));
     ViewportClient->SetViewMode(VMI_Lit);
     ViewportClient->SetAllowCinematicControl(true);
     ViewportClient->VisibilityDelegate.BindLambda([]() { return true; });
@@ -182,4 +182,26 @@ void STrafficLightPreviewViewport::Rebuild(TArray<FTLHead>& Heads)
     {
         SceneViewport->Invalidate();
     }
+}
+
+void STrafficLightPreviewViewport::ResetFrame(const UStaticMeshComponent* Comp)
+{
+    if (!Comp || !ViewportClient.IsValid())
+    {
+        return;
+    }
+
+    FBox Box(EForceInit::ForceInit);
+    Box += Comp->Bounds.GetBox();
+
+    const FVector Center {Box.GetCenter()};
+    const float Radius {Box.GetExtent().GetMax()};
+    const float Distance {Radius * -10.0f};
+    const FVector Forward {FVector::ForwardVector.Rotation().RotateVector(FVector(0,1,0))};
+    const FVector Up      {FVector::UpVector};
+    const FVector CamPos {Center - Forward * Distance + Up * (Radius * 0.5f)};
+    const FRotator CamRot(0.0f, -90.0f, 0.0f);
+
+    ViewportClient->SetViewLocation(CamPos);
+    ViewportClient->SetViewRotation(CamRot);
 }
