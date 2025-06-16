@@ -104,6 +104,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
 {
     check(Heads.IsValidIndex(HeadIndex));
     check(Heads[HeadIndex].Modules.IsValidIndex(ModuleIndex));
+
     FTLModule& Module = Heads[HeadIndex].Modules[ModuleIndex];
 
     static constexpr float PosMin   = -50.0f, PosMax   =  50.0f;
@@ -224,10 +225,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                             }
                         }
 
-                        RebuildModuleChain(HeadData);
-                        PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-
-                        RefreshHeadList();
+                        Rebuild();
                     })
                     [
                         SNew(STextBlock)
@@ -352,8 +350,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -373,8 +370,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -402,8 +398,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -421,8 +416,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Heads[HeadIndex]);
-                        UpdateModuleMeshesInViewport(HeadIndex);
+                        Rebuild();
                     }
                     })
                 ]
@@ -450,8 +444,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -469,8 +462,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -502,8 +494,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -523,8 +514,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -544,8 +534,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         M.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
-                            RebuildModuleChain(Heads[HeadIndex]);
-                            UpdateModuleMeshesInViewport(HeadIndex);
+                            Rebuild();
                         }
                     })
                 ]
@@ -593,7 +582,7 @@ FReply STrafficLightToolWidget::OnAddHeadClicked()
     FTLHead NewHead;
     const int32 Index {Heads.Add(NewHead)};
     OnAddModuleClicked(Index);
-    RefreshHeadList();
+    Rebuild();
     return FReply::Handled();
 }
 
@@ -633,10 +622,7 @@ void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int3
         Mod.ModuleMeshComponent->SetStaticMesh(NewMesh);
     }
 
-    RebuildModuleChain(HeadData);
-    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-
-    RefreshHeadList();
+    Rebuild();
 }
 
 void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex)
@@ -657,9 +643,7 @@ void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOri
         }
     }
 
-    RebuildModuleChain(HeadData);
-    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-    RefreshHeadList();
+    Rebuild();
 }
 
 void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex)
@@ -680,9 +664,7 @@ void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 He
         }
     }
 
-    RebuildModuleChain(HeadData);
-    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-    RefreshHeadList();
+    Rebuild();
 }
 
 void STrafficLightToolWidget::RefreshHeadList()
@@ -853,8 +835,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Transform.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -872,8 +853,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Transform.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -891,8 +871,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Transform.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -969,8 +948,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Offset.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -988,8 +966,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Offset.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -1007,8 +984,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     Head.Offset.SetLocation(L);
                     if (PreviewViewport.IsValid())
                     {
-                        RebuildModuleChain(Head);
-                        UpdateModuleMeshesInViewport(Index);
+                        Rebuild();
                     }
                 })
             ]
@@ -1320,9 +1296,7 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
     check(Heads.IsValidIndex(HeadIndex));
 
     FTLHead& HeadData = Heads[HeadIndex];
-
     FTLModule NewModule;
-
     NewModule.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, NewModule);
 
     if (!NewModule.ModuleMesh)
@@ -1335,8 +1309,7 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
     FTLModule& StoredModule {HeadData.Modules.Last()};
     StoredModule.ModuleMeshComponent = PreviewViewport->AddModuleMesh(HeadData, StoredModule);
 
-    RebuildModuleChain(HeadData);
-    RefreshHeadList();
+    Rebuild();
 
     return FReply::Handled();
 }
@@ -1347,14 +1320,20 @@ FReply STrafficLightToolWidget::OnDeleteModuleClicked(int32 HeadIndex, int32 Mod
     auto& Head = Heads[HeadIndex];
     check(Head.Modules.IsValidIndex(ModuleIndex));
     Head.Modules.RemoveAt(ModuleIndex);
-    RebuildModuleChain(Head);
-    PreviewViewport->ClearModuleMeshes();
-    for (auto& M : Head.Modules)
-    {
-        M.ModuleMeshComponent = PreviewViewport->AddModuleMesh(Head, M);
-    }
-    RefreshHeadList();
+    Rebuild();
     return FReply::Handled();
+}
+
+void STrafficLightToolWidget::Rebuild()
+{
+    check(PreviewViewport.IsValid());
+    PreviewViewport->ClearModuleMeshes();
+    for (FTLHead& Head : Heads)
+    {
+        RebuildModuleChain(Head);
+    }
+    PreviewViewport->Rebuild(Heads);
+    RefreshHeadList();
 }
 
 FString STrafficLightToolWidget::GetHeadStyleText(ETLHeadStyle Style)
@@ -1383,13 +1362,6 @@ FString STrafficLightToolWidget::GetLightTypeText(ETLLightType Type)
     const UEnum* EnumPtr = StaticEnum<ETLLightType>();
     if (!EnumPtr) return FString(TEXT("Unknown"));
     return EnumPtr->GetDisplayNameTextByValue((int64)Type).ToString();
-}
-
-void STrafficLightToolWidget::UpdateModuleMeshesInViewport(int32 HeadIndex)
-{
-    check(PreviewViewport.IsValid());
-    check(Heads.IsValidIndex(HeadIndex));
-    PreviewViewport->RecreateModuleMeshesForHead(Heads[HeadIndex]);
 }
 
 void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation)
@@ -1429,9 +1401,7 @@ FReply STrafficLightToolWidget::OnMoveModuleUpClicked(int32 HeadIndex, int32 Mod
 {
     OnMoveModuleUp(HeadIndex, ModuleIndex);
     FTLHead& HeadData {Heads[HeadIndex]};
-    RebuildModuleChain(HeadData);
-    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-    RefreshHeadList();
+    Rebuild();
     return FReply::Handled();
 }
 
@@ -1439,40 +1409,30 @@ FReply STrafficLightToolWidget::OnMoveModuleDownClicked(int32 HeadIndex, int32 M
 {
     OnMoveModuleDown(HeadIndex, ModuleIndex);
     FTLHead& HeadData {Heads[HeadIndex]};
-    RebuildModuleChain(HeadData);
-    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
-    RefreshHeadList();
+    Rebuild();
     return FReply::Handled();
 }
 
 void STrafficLightToolWidget::OnMoveModuleUp(int32 HeadIndex, int32 ModuleIndex)
 {
-    if (!Heads.IsValidIndex(HeadIndex))
-    {
-        return;
-    }
-
+    check(Heads.IsValidIndex(HeadIndex));
     FTLHead& HeadData = Heads[HeadIndex];
 
     if (ModuleIndex > 0 && ModuleIndex < HeadData.Modules.Num())
     {
         HeadData.Modules.Swap(ModuleIndex, ModuleIndex - 1);
-        RebuildModuleChain(HeadData);
+        Rebuild();
     }
 }
 
 void STrafficLightToolWidget::OnMoveModuleDown(int32 HeadIndex, int32 ModuleIndex)
 {
-    if (!Heads.IsValidIndex(HeadIndex))
-    {
-        return;
-    }
-
+    check(Heads.IsValidIndex(HeadIndex));
     FTLHead& HeadData = Heads[HeadIndex];
 
     if (ModuleIndex >= 0 && ModuleIndex < HeadData.Modules.Num() - 1)
     {
         HeadData.Modules.Swap(ModuleIndex, ModuleIndex + 1);
-        RebuildModuleChain(HeadData);
+        Rebuild();
     }
 }

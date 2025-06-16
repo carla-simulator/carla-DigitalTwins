@@ -35,6 +35,7 @@ private:
     /** Create a single head entry */
     TSharedRef<SWidget> CreateHeadEntry(int32 Index);
     void RebuildModuleChain(FTLHead& Head);
+    void Rebuild();
 
     /** MODULE */
 private:
@@ -45,7 +46,6 @@ private:
     TSharedRef<SWidget> CreateModuleEntry(int32 HeadIndex, int32 ModuleIndex);
     /** Delete existing head by index */
     FReply OnDeleteModuleClicked(int32 HeadIndex, int32 ModuleIndex);
-    void UpdateModuleMeshesInViewport(int32 HeadIndex);
     void ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation);
     void OnMoveModuleUp(int32 HeadIndex, int32 ModuleIndex);
     void OnMoveModuleDown(int32 HeadIndex, int32 ModuleIndex);

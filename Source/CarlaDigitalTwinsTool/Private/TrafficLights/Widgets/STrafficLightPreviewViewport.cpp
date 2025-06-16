@@ -167,12 +167,15 @@ void STrafficLightPreviewViewport::ClearModuleMeshes()
     ModuleMeshComponents.Empty();
 }
 
-void STrafficLightPreviewViewport::RecreateModuleMeshesForHead(FTLHead& Head)
+void STrafficLightPreviewViewport::Rebuild(TArray<FTLHead>& Heads)
 {
     ClearModuleMeshes();
 
-    for (FTLModule& ModuleData : Head.Modules)
+    for (FTLHead& Head : Heads)
     {
-        ModuleData.ModuleMeshComponent = AddModuleMesh(Head, ModuleData);
+        for (FTLModule& Module : Head.Modules)
+        {
+            Module.ModuleMeshComponent = AddModuleMesh(Head, Module);
+        }
     }
 }

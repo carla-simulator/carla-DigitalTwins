@@ -44,7 +44,7 @@ public:
 public:
     UStaticMeshComponent* AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData);
     void ClearModuleMeshes();
-    void RecreateModuleMeshesForHead(FTLHead& Head);
+    void Rebuild(TArray<FTLHead>& Heads);
 
 private:
     FLinearColor InitialColorFor(ETLHeadStyle Style) const;
