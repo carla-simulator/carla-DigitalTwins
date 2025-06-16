@@ -157,7 +157,7 @@ public class CarlaDigitalTwinsTool : ModuleRules
         "StreetMapImporting",
         "StreetMapRuntime",
         "InputCore",
-        "AppFramework"
+        "AppFramework",
 				// ... add private dependencies that you statically link with here ...
           }
       );

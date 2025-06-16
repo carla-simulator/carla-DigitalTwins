@@ -11,10 +11,12 @@
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Input/SSlider.h"
 #include "Widgets/Input/STextComboBox.h"
-#include "Widgets/Colors/SColorPicker.h"
 #include "InputCoreTypes.h"
 #include "Components/SceneComponent.h"
 #include "Engine/StaticMeshSocket.h"
+#include "Widgets/Colors/SColorPicker.h"
+#include "Widgets/Input/SComboButton.h"
+#include "Styling/AppStyle.h"
 
 void STrafficLightToolWidget::Construct(const FArguments& InArgs)
 {
@@ -278,25 +280,41 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 ]
             ]
 
-            // — Emissive Color
-            + SVerticalBox::Slot().AutoHeight().Padding(0,2)[
-                SNew(SButton)
-                .Text(FText::FromString("Pick Light Color"))
-                .OnClicked_Lambda([this,HeadIndex,ModuleIndex](){
-                    FColorPickerArgs PickerArgs;
-                    PickerArgs.InitialColorOverride = Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
-                    PickerArgs.bUseAlpha = false;
-                    PickerArgs.ParentWidget = SharedThis(this);
-                    PickerArgs.OnColorCommitted = FOnLinearColorValueChanged::CreateLambda(
-                        [this,HeadIndex,ModuleIndex](FLinearColor NewColor){
+            // — Emissive Color Picker —
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,2)
+            [
+                SNew(SComboButton)
+                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
+                .MenuPlacement(MenuPlacement_BelowAnchor)
+                .ButtonContent()
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString("Pick Light Color"))
+                ]
+                .OnGetMenuContent_Lambda([this, HeadIndex, ModuleIndex]()
+                {
+                    return SNew(SBorder)
+                        .BorderImage(FAppStyle::GetBrush("Menu.Background"))
+                        .Padding(4)
+                    [
+                        SNew(SColorPicker)
+                        .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]() {
+                            return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
+                        })
+                        .UseAlpha(false)
+                        .OnlyRefreshOnMouseUp(true)
+                        .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor) {
                             auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
                             Mod.EmissiveColor = NewColor;
                             if (Mod.LightMID)
+                            {
                                 Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
-                        }
-                    );
-                    OpenColorPicker(PickerArgs);
-                    return FReply::Handled();
+                            }
+                            Rebuild();
+                        })
+                    ];
                 })
             ]
 
