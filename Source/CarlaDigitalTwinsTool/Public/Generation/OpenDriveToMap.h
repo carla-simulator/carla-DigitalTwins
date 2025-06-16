@@ -80,6 +80,13 @@ public:
   UFUNCTION(BlueprintCallable)
   AActor* SpawnActorInEditorWorld(UClass* Class, FVector Location, FRotator Rotation);
 
+  UFUNCTION(BlueprintCallable)
+  UWorld* GetEditorWorld();
+
+  UFUNCTION(BlueprintCallable)
+  UWorld* GetGameWorld();
+
+
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, ALargeMapManager* LargeMapManager);
 
@@ -107,6 +114,9 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D FinalGeoCoordinates;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+  double DefaultLaneWidth = 3.35;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultRoadMaterial;

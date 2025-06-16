@@ -11,6 +11,8 @@
 #include "Materials/MaterialInstance.h"
 #include "StaticMeshAttributes.h"
 #include "RenderingThread.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Components/SceneComponent.h"
 // Carla C++ headers
 
 // Carla plugin headers
@@ -181,6 +183,7 @@ UStaticMesh* UMapGenFunctionLibrary::CreateMesh(
 
     Mesh->SetLightingGuid(FGuid::NewGuid());
     Mesh->GetStaticMaterials().Add(FStaticMaterial(MaterialInstance));
+    Mesh->NaniteSettings.bEnabled = true;
     Mesh->BuildFromMeshDescriptions({ &Description }, Params);
     Mesh->CreateBodySetup();
 #if ENGINE_MAJOR_VERSION < 5
@@ -195,15 +198,22 @@ UStaticMesh* UMapGenFunctionLibrary::CreateMesh(
     // Notify asset registry of new asset
     FAssetRegistryModule::AssetCreated(Mesh);
     //UPackage::SavePackage(Package, Mesh, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *(MeshName.ToString()), GError, nullptr, true, true, SAVE_NoError);
+#if ENGINE_MAJOR_VERSION > 4
+
+    TArray<UStaticMesh*> MeshToEnableNanite;
+    MeshToEnableNanite.Add(Mesh);
+    UStaticMesh::BatchBuild(MeshToEnableNanite);
+#endif
     Package->MarkPackageDirty();
     return Mesh;
   }
   return nullptr;
 }
 
+// Transverse Mercator projection, see e.g. https://proj.org/en/stable/operations/projections/tmerc.html
 FVector2D UMapGenFunctionLibrary::GetTransversemercProjection(float lat, float lon, float lat0, float lon0)
 {
-  // earth radius in m
+  // Earth radius in m
   const float R = 6373000.0f;
   float latt = FMath::DegreesToRadians(lat);
   float lonn  = FMath::DegreesToRadians(lon - lon0);
@@ -219,6 +229,26 @@ FVector2D UMapGenFunctionLibrary::GetTransversemercProjection(float lat, float l
   FVector2D Result = FVector2D(x, -(y - y0)) * OSMToCentimetersScaleFactor;
 
   return Result;
+}
+
+FVector2D UMapGenFunctionLibrary::InverseTransverseMercatorProjection(float x, float y, float lat0, float lon0)
+{
+    const float R = 6373000.0f;
+
+    x /= OSMToCentimetersScaleFactor;
+    y = -y / OSMToCentimetersScaleFactor;
+
+    float latt0 = FMath::DegreesToRadians(lat0);
+    float eps0 = latt0; // atan(tan(latt0)/cos(0));
+    float y0 = R * eps0;
+
+    float eps = (y + y0) / R;
+    float nab = x / R;
+
+    float lat = FMath::RadiansToDegrees(atan(sin(eps)/sqrt(tan(nab)*tan(nab)+cos(eps)*cos(eps))));
+    float lon = lon0 + FMath::RadiansToDegrees(atan(sinh(nab) / cos(eps)));
+
+    return FVector2D(lat, lon);
 }
 
 void UMapGenFunctionLibrary::SetThreadToSleep(float seconds){
@@ -244,4 +274,35 @@ void UMapGenFunctionLibrary::CleanupGEngine(){
     GEditor->Cleanse(true, true, TransResetText);
   }
 #endif
+}
+
+
+UInstancedStaticMeshComponent* UMapGenFunctionLibrary::AddInstancedStaticMeshComponentToActor(AActor* TargetActor){
+  if ( !TargetActor )
+  {
+      UE_LOG(LogCarlaMapGenFunctionLibrary, Warning, TEXT("Invalid TargetActor in AddInstancedStaticMeshComponentToActor"));
+      return nullptr;
+  }
+
+  if (!TargetActor->GetRootComponent())
+  {
+      USceneComponent* NewRoot = NewObject<USceneComponent>(TargetActor, TEXT("GeneratedRootComponent"));
+      TargetActor->SetRootComponent(NewRoot);
+      NewRoot->RegisterComponent();
+  }
+
+  // Crear el componente instanciado
+  UInstancedStaticMeshComponent* ISMComponent = NewObject<UInstancedStaticMeshComponent>(TargetActor);
+  if (!ISMComponent)
+  {
+      UE_LOG(LogCarlaMapGenFunctionLibrary, Error, TEXT("COuld not create UInstancedStaticMeshComponent"));
+      return nullptr;
+  }
+
+  ISMComponent->SetupAttachment(TargetActor->GetRootComponent());
+  ISMComponent->RegisterComponent();
+
+  TargetActor->AddInstanceComponent(ISMComponent);
+
+  return ISMComponent;
 }
