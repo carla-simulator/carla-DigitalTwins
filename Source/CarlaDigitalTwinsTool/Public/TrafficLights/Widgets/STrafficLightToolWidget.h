@@ -25,7 +25,6 @@ public:
 
     /** HEAD */
 private:
-    TSharedRef<SWidget> BuildHeadEntry(int32 HeadIndex);
     /** Add a new head */
     FReply OnAddHeadClicked();
     /** Delete existing head by index */
@@ -33,7 +32,7 @@ private:
     /** Rebuild the UI list */
     void RefreshHeadList();
     /** Create a single head entry */
-    TSharedRef<SWidget> CreateHeadEntry(int32 Index);
+    TSharedRef<SWidget> BuildHeadEntry(int32 Index);
     void RebuildModuleChain(FTLHead& Head);
     void Rebuild();
 
@@ -43,7 +42,6 @@ private:
     TSharedRef<SWidget> BuildModulesSection(int32 HeadIndex);
     /** Add a new module */
     FReply OnAddModuleClicked(int32 HeadIndex);
-    TSharedRef<SWidget> CreateModuleEntry(int32 HeadIndex, int32 ModuleIndex);
     /** Delete existing head by index */
     FReply OnDeleteModuleClicked(int32 HeadIndex, int32 ModuleIndex);
     void ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation);
@@ -73,4 +71,7 @@ private:
     TSharedPtr<SVerticalBox> HeadListContainer;
     TArray<TSharedPtr<SVerticalBox>> ModuleListContainers;
     TArray<FTLHead> Heads;
+    TArray<bool> HeadExpandedStates;
+    TArray<bool> HeadModulesSectionExpandedStates;
+    TArray<TArray<bool>> ModuleExpandedStates;
 };
