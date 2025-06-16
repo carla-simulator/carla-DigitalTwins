@@ -206,7 +206,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         return SNew(STextBlock).Text(FText::FromString(*InItem));
                     })
                     .OnSelectionChanged_Lambda([this, HeadIndex, ModuleIndex](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
-                        int32 Choice = LightTypeOptions.IndexOfByPredicate(
+                        const int32 Choice = LightTypeOptions.IndexOfByPredicate(
                             [&](auto& StrPtr){ return *StrPtr == *NewSel; }
                         );
                         FTLHead& HeadData {Heads[HeadIndex]};
@@ -606,6 +606,30 @@ void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOri
     RefreshHeadList();
 }
 
+void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex)
+{
+    check(PreviewViewport.IsValid());
+    check(Heads.IsValidIndex(HeadIndex));
+
+    FTLHead& HeadData {Heads[HeadIndex]};
+    HeadData.Style = NewStyle;
+
+    for (FTLModule& Mod : HeadData.Modules)
+    {
+        Mod.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+
+        if (Mod.ModuleMeshComponent)
+        {
+            Mod.ModuleMeshComponent->SetStaticMesh(Mod.ModuleMesh);
+        }
+    }
+
+    RebuildModuleChain(HeadData);
+    PreviewViewport->RecreateModuleMeshesForHead(HeadData);
+    RefreshHeadList();
+}
+
+
 void STrafficLightToolWidget::RefreshHeadList()
 {
     HeadListContainer->ClearChildren();
@@ -657,9 +681,9 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
             })
             .OnSelectionChanged_Lambda([this,Index](TSharedPtr<FString> New, ESelectInfo::Type)
             {
-                int32 Choice = HeadStyleOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
+                const int32 Choice = HeadStyleOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
                 Heads[Index].Style = static_cast<ETLHeadStyle>(Choice);
-                PreviewViewport->SetHeadStyle(Index, Heads[Index].Style);
+                OnHeadStyleChanged(Heads[Index].Style, Index);
             })
             [
                 SNew(STextBlock)
@@ -681,7 +705,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
             })
             .OnSelectionChanged_Lambda([this,Index](TSharedPtr<FString> New, ESelectInfo::Type)
             {
-                int32 Choice = HeadAttachmentOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
+                const int32 Choice = HeadAttachmentOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
                 Heads[Index].Attachment = static_cast<ETLHeadAttachment>(Choice);
             })
             [
@@ -703,7 +727,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
             })
             .OnSelectionChanged_Lambda([this, Index](TSharedPtr<FString> NewValue, ESelectInfo::Type )
             {
-                int32 Choice = HeadOrientationOptions.IndexOfByPredicate(
+                const int32 Choice = HeadOrientationOptions.IndexOfByPredicate(
                     [&](auto& S){ return S == NewValue; }
                 );
                 ETLHeadOrientation NewOrient = static_cast<ETLHeadOrientation>(Choice);
