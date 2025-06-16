@@ -40,6 +40,8 @@ STrafficLightPreviewViewport::~STrafficLightPreviewViewport()
 {
     if (ViewportClient.IsValid())
     {
+        FlushRenderingCommands();
+        PreviewScene.Reset();
         ViewportClient->Viewport = nullptr;
     }
 }
@@ -117,7 +119,7 @@ FLinearColor STrafficLightPreviewViewport::InitialColorFor(ETLHeadStyle Style) c
     }
 }
 
-UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead& Head, const FTLModule& ModuleData)
+UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData)
 {
     const FTransform ModuleWorldTransform {ModuleData.Transform * Head.Transform * ModuleData.Offset};
 
@@ -134,11 +136,17 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
     Comp->SetStaticMesh(ModuleData.ModuleMesh);
     if (UMaterialInterface* BodyMat = FMaterialFactory::GetModuleBodyMaterial(Head, ModuleData))
     {
-        Comp->SetMaterial(0, BodyMat);
+        UMaterialInstanceDynamic* BodyMID = UMaterialInstanceDynamic::Create(BodyMat, Comp);
+        Comp->SetMaterial(0, BodyMID);
+        ModuleData.BodyMID = BodyMID;
     }
     if (UMaterialInterface* LightMat = FMaterialFactory::GetLightMaterial(ModuleData.LightType))
     {
-        Comp->SetMaterial(1, LightMat);
+        UMaterialInstanceDynamic* LightMID = UMaterialInstanceDynamic::Create(LightMat, Comp);
+        LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), ModuleData.EmissiveIntensity);
+        LightMID->SetVectorParameterValue(TEXT("Emissive Color"), ModuleData.EmissiveColor);
+        Comp->SetMaterial(1, LightMID);
+        ModuleData.LightMID = LightMID;
     }
 
     ModuleMeshComponents.Add(Comp);

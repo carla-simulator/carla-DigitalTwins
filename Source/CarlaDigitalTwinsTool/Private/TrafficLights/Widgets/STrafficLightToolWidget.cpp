@@ -11,6 +11,7 @@
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Input/SSlider.h"
 #include "Widgets/Input/STextComboBox.h"
+#include "Widgets/Colors/SColorPicker.h"
 #include "InputCoreTypes.h"
 #include "Components/SceneComponent.h"
 #include "Engine/StaticMeshSocket.h"
@@ -239,6 +240,66 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         })
                     ]
                 ]
+            ]
+
+            // — Emissive Intensity Slider —
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+
+                // Label
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString("Emissive:"))
+                ]
+
+                // Slider
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f)
+                .VAlign(VAlign_Center)
+                .Padding(8,0)
+                [
+                    SNew(SSlider)
+                    .MinValue(0.0f).MaxValue(1000.0f)
+                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
+                        return Heads[HeadIndex].Modules[ModuleIndex].EmissiveIntensity;
+                    })
+                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float NewVal) {
+                        FTLModule& Mod = Heads[HeadIndex].Modules[ModuleIndex];
+                        Mod.EmissiveIntensity = NewVal;
+                        if (Mod.LightMID)
+                        {
+                            Mod.LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Mod.EmissiveIntensity);
+                        }
+                    })
+                ]
+            ]
+
+            // — Emissive Color
+            + SVerticalBox::Slot().AutoHeight().Padding(0,2)[
+                SNew(SButton)
+                .Text(FText::FromString("Pick Light Color"))
+                .OnClicked_Lambda([this,HeadIndex,ModuleIndex](){
+                    FColorPickerArgs PickerArgs;
+                    PickerArgs.InitialColorOverride = Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
+                    PickerArgs.bUseAlpha = false;
+                    PickerArgs.ParentWidget = SharedThis(this);
+                    PickerArgs.OnColorCommitted = FOnLinearColorValueChanged::CreateLambda(
+                        [this,HeadIndex,ModuleIndex](FLinearColor NewColor){
+                            auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
+                            Mod.EmissiveColor = NewColor;
+                            if (Mod.LightMID)
+                                Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                        }
+                    );
+                    OpenColorPicker(PickerArgs);
+                    return FReply::Handled();
+                })
             ]
 
             // — Has Visor Checkbox —
@@ -531,9 +592,6 @@ FReply STrafficLightToolWidget::OnAddHeadClicked()
 {
     // Create new head data
     FTLHead NewHead;
-    NewHead.HeadID = FGuid::NewGuid();
-    NewHead.Transform = FTransform::Identity;
-    NewHead.Offset = FTransform::Identity;
 
     const int32 Index {Heads.Add(NewHead)};
     OnAddModuleClicked(Index);
@@ -1227,8 +1285,6 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
     FTLHead& HeadData = Heads[HeadIndex];
 
     FTLModule NewModule;
-    NewModule.ModuleID = FGuid::NewGuid();
-    NewModule.Offset = FTransform::Identity;
 
     NewModule.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, NewModule);
 

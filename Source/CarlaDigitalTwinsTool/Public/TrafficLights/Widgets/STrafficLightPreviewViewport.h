@@ -42,7 +42,7 @@ public:
 
     /** Modules */
 public:
-    UStaticMeshComponent* AddModuleMesh(const FTLHead& Head, const FTLModule& ModuleData);
+    UStaticMeshComponent* AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData);
     void ClearModuleMeshes();
     void RecreateModuleMeshesForHead(FTLHead& Head);
 

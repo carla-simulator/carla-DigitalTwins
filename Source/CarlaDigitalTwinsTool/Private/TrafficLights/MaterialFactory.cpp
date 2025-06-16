@@ -25,9 +25,7 @@ static const TMap<FString, FString> GBodyKeyToPath = {
 };
 
 static const TMap<ETLLightType, FString> GLightTypeToPath = {
-    { ETLLightType::Red,    TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
-    { ETLLightType::Yellow, TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
-    { ETLLightType::Green,  TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") }
+    { ETLLightType::SolidColor, TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
 };
 
 UMaterialInterface* FMaterialFactory::GetModuleBodyMaterial(

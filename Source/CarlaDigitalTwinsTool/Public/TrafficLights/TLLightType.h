@@ -11,9 +11,7 @@
 UENUM(BlueprintType)
 enum class ETLLightType : uint8
 {
-    Red            UMETA(DisplayName = "Solid Color (Red)"),
-    Yellow         UMETA(DisplayName = "Solid Color (Yellow)"),
-    Green          UMETA(DisplayName = "Solid Color (Green)"),
+    SolidColor     UMETA(DisplayName = "Solid Color"),
     ArrowLeft      UMETA(DisplayName = "Arrow Left"),
     ArrowRight     UMETA(DisplayName = "Arrow Right"),
     ArrowStraight  UMETA(DisplayName = "Arrow Straight"),
