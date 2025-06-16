@@ -590,9 +590,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModulesSection(int32 HeadIndex
 
 FReply STrafficLightToolWidget::OnAddHeadClicked()
 {
-    // Create new head data
     FTLHead NewHead;
-
     const int32 Index {Heads.Add(NewHead)};
     OnAddModuleClicked(Index);
     RefreshHeadList();
@@ -687,7 +685,6 @@ void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 He
     RefreshHeadList();
 }
 
-
 void STrafficLightToolWidget::RefreshHeadList()
 {
     HeadListContainer->ClearChildren();
@@ -773,6 +770,10 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
         ]
 
         // Orientation
+        + SVerticalBox::Slot().AutoHeight().Padding(0,2)
+        [
+            SNew(STextBlock).Text(FText::FromString("Orientation"))
+        ]
         + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(2)
@@ -846,9 +847,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Transform.GetLocation().X;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Loc{ Heads[Index].Transform.GetLocation() };
-                    Loc.X = V;
-                    Heads[Index].Transform.SetLocation(Loc);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Transform.GetLocation();
+                    L.X = V;
+                    Head.Transform.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
 
@@ -859,9 +866,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Transform.GetLocation().Y;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Loc{ Heads[Index].Transform.GetLocation() };
-                    Loc.Y = V;
-                    Heads[Index].Transform.SetLocation(Loc);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Transform.GetLocation();
+                    L.Y = V;
+                    Head.Transform.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
 
@@ -872,9 +885,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Transform.GetLocation().Z;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Loc{ Heads[Index].Transform.GetLocation() };
-                    Loc.Z = V;
-                    Heads[Index].Transform.SetLocation(Loc);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Transform.GetLocation();
+                    L.Z = V;
+                    Head.Transform.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
         ]
@@ -944,9 +963,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.GetLocation().X;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Off{ Heads[Index].Offset.GetLocation() };
-                    Off.X = V;
-                    Heads[Index].Offset.SetLocation(Off);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Offset.GetLocation();
+                    L.X = V;
+                    Head.Offset.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
 
@@ -957,9 +982,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.GetLocation().Y;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Off{ Heads[Index].Offset.GetLocation() };
-                    Off.Y = V;
-                    Heads[Index].Offset.SetLocation(Off);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Offset.GetLocation();
+                    L.Y = V;
+                    Head.Offset.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
 
@@ -970,9 +1001,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::CreateHeadEntry(int32 Index)
                     return Heads[Index].Offset.GetLocation().Z;
                 })
                 .OnValueChanged_Lambda([this,Index](float V){
-                    FVector Off{ Heads[Index].Offset.GetLocation() };
-                    Off.Z = V;
-                    Heads[Index].Offset.SetLocation(Off);
+                    auto& Head = Heads[Index];
+                    FVector L = Head.Offset.GetLocation();
+                    L.Z = V;
+                    Head.Offset.SetLocation(L);
+                    if (PreviewViewport.IsValid())
+                    {
+                        RebuildModuleChain(Head);
+                        UpdateModuleMeshesInViewport(Index);
+                    }
                 })
             ]
         ]

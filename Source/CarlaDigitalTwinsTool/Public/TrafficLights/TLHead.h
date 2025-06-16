@@ -26,7 +26,7 @@ struct FTLHead
 
     /** Offset transform */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    FTransform Offset;
+    FTransform Offset { FTransform::Identity };
 
     /** Head style */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
@@ -49,6 +49,6 @@ struct FTLHead
     TArray<FTLModule> Modules;
 
     UPROPERTY(Transient)
-    FGuid HeadID { FGuid() };
+    FGuid HeadID { FGuid::NewGuid() };
 
 };
