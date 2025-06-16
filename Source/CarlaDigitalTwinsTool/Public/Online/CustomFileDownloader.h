@@ -51,7 +51,7 @@ public:
   UFUNCTION(BlueprintCallable)
   void StartDownload();
   UFUNCTION(BlueprintCallable)
-  void ConvertOSMInOpenDrive(FString FilePath, float Lat_0 = 0.0f, float Lon_0 = 0.0f, double Default_lane_width = 3.35);
+  void ConvertOSMInOpenDrive(FString FilePath, float Lat_0 = 0.0f, float Lon_0 = 0.0f, double Default_lane_width = 3.35, double Default_Layer_Height = 3.0);
 
   FString ResultFileName;
 

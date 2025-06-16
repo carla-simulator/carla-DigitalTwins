@@ -148,7 +148,7 @@ FString LaneTypeToFString(carla::road::Lane::LaneType LaneType)
 void UOpenDriveToMap::ConvertOSMInOpenDrive()
 {
   FilePath = UGenerationPathsHelper::GetRawMapDirectoryPath(MapName) + "OpenDrive/" + MapName + ".osm";
-  FileDownloader->ConvertOSMInOpenDrive( FilePath , OriginGeoCoordinates.X, OriginGeoCoordinates.Y, DefaultLaneWidth);
+  FileDownloader->ConvertOSMInOpenDrive( FilePath , OriginGeoCoordinates.X, OriginGeoCoordinates.Y, DefaultLaneWidth, DefaultOSMLayerHeight);
   FilePath.RemoveFromEnd(".osm", ESearchCase::Type::IgnoreCase);
   FilePath += ".xodr";
 
@@ -560,7 +560,7 @@ void UOpenDriveToMap::GenerateAll(const boost::optional<carla::road::Map>& Param
   GenerateLaneMarks(ParamCarlaMap, MinLocation, MaxLocation);
   // GenerateSpawnPoints(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Terrain..... "));
-  CreateTerrain(12800, 256);
+  CreateTerrain(12800, 2048);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Tree positions..... "));
   GenerateTreePositions(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Misc stuff..... "));
@@ -917,8 +917,8 @@ FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin ){
 }
 
 float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
-  FVector Start = Origin + FVector( 0, 0, 10000);
-  FVector End = Origin - FVector( 0, 0, 10000);
+  FVector Start = Origin - FVector( 0, 0, 10000000000);
+  FVector End = Origin + FVector( 0, 0, 10000000000);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
   CollisionQuery.AddIgnoredActors(Landscapes);
@@ -932,7 +932,7 @@ float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
     CollisionQuery,
     CollisionParams) )
   {
-    return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f - 80.0f;
+    return HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f;
   }else{
     return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f - 1.0f;
   }
