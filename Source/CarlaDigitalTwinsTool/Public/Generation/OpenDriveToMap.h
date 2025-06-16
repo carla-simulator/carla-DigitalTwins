@@ -9,6 +9,7 @@
 #include "EditorUtilityActor.h"
 #include "EditorUtilityObject.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Generation/OpenDriveFileGenerationParameters.h"
 #include <Carla/Road/RoadMap.h>
 #include <boost/optional.hpp>
 
@@ -38,10 +39,10 @@ public:
   void CreateMap();
 
   UFUNCTION(BlueprintCallable)
-  void CreateTerrain(const int MeshGridSize, const float MeshGridSectionSize);
+  void CreateTerrain(const int NumberOfTerrainX, const int NumberOfTerrainY, const float MeshGridResolution);
 
   UFUNCTION(BlueprintCallable)
-  void CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int GridSize, const float GridSectionSize);
+  void CreateTerrainMesh(const int MeshIndex, const FVector2D Offset,  const int TileSizeX, const int TileSizeY, const float GridSectionSize);
 
   UFUNCTION(BlueprintCallable)
   float GetHeight(float PosX, float PosY,bool bDrivingLane = false);
@@ -115,13 +116,6 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D FinalGeoCoordinates;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-  double DefaultLaneWidth = 3.35;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-  double DefaultOSMLayerHeight = 3.35;
-
-
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultRoadMaterial;
 
@@ -137,7 +131,8 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultLandscapeMaterial;
 
-
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
+  FOpenDriveFileGenerationParameters OpenDriveGenParams;
 
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceBetweenTrees = 50.0f;

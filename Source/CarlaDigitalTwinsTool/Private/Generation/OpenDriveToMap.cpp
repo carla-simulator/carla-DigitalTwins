@@ -38,6 +38,7 @@
 #include "ProceduralMeshConversion.h"
 #include "EditorLevelLibrary.h"
 #if ENGINE_MAJOR_VERSION > 4
+
 #include "Subsystems/UnrealEditorSubsystem.h"
 #include "Editor/Transactor.h"
 #endif
@@ -148,7 +149,7 @@ FString LaneTypeToFString(carla::road::Lane::LaneType LaneType)
 void UOpenDriveToMap::ConvertOSMInOpenDrive()
 {
   FilePath = UGenerationPathsHelper::GetRawMapDirectoryPath(MapName) + "OpenDrive/" + MapName + ".osm";
-  FileDownloader->ConvertOSMInOpenDrive( FilePath , OriginGeoCoordinates.X, OriginGeoCoordinates.Y, DefaultLaneWidth, DefaultOSMLayerHeight);
+  FileDownloader->ConvertOSMInOpenDrive( FilePath , OriginGeoCoordinates.X, OriginGeoCoordinates.Y, OpenDriveGenParams);
   FilePath.RemoveFromEnd(".osm", ESearchCase::Type::IgnoreCase);
   FilePath += ".xodr";
 
@@ -192,28 +193,28 @@ void UOpenDriveToMap::CreateMap()
 
 }
 
-void UOpenDriveToMap::CreateTerrain( const int MeshGridSize, const float MeshGridSectionSize)
+void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int NumberOfTerrainY, const float MeshGridResolution)
 {
   TArray<AActor*> FoundActors;
   UGameplayStatics::GetAllActorsOfClass(UEditorLevelLibrary::GetEditorWorld(), AStaticMeshActor::StaticClass(), FoundActors);
   FVector BoxExtent = FVector(TileSize, TileSize,0);
   FVector MinBox = FVector(MinPosition.X, MaxPosition.Y,0);
 
-  int NumI = BoxExtent.X  / MeshGridSize;
-  int NumJ = BoxExtent.Y  / MeshGridSize;
+  float TileSizeX = TileSize / NumberOfTerrainX;
+  float TileSizeY = TileSize / NumberOfTerrainY;
 
-  for( int i = 0; i <= NumI; i++ )
+  for( int i = 0; i <= NumberOfTerrainY; i++ )
   {
-    for( int j = 0; j <= NumJ; j++ )
+    for( int j = 0; j <= NumberOfTerrainX; j++ )
     {
       // Offset that each procedural mesh is displaced to accomodate all the tiles
-      FVector2D Offset( MinBox.X + i * MeshGridSize, MinBox.Y + j * MeshGridSize);
-      CreateTerrainMesh(i * NumJ + j, Offset, MeshGridSize, MeshGridSectionSize );
+      FVector2D Offset( MinBox.X + i * TileSizeX, MinBox.Y + j * TileSizeY);
+      CreateTerrainMesh(i * NumberOfTerrainY + j, Offset, TileSizeX, TileSizeY, MeshGridResolution );
     }
   }
 }
 
-void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int GridSize, const float GridSectionSize)
+void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int TileSizeX, const int TileSizeY, const float MeshResolution)
 {
   // const float GridSectionSize = 100.0f; // In cm
   const float HeightScale = 3.0f;
@@ -233,17 +234,17 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
   TArray<FVector2D> UVs;
 
 
-  int VerticesInLine = (GridSize / GridSectionSize) + 1.0f;
+  int VerticesInLineX = MeshResolution + 1;
+  int VerticesInLineY = MeshResolution + 1;
+  float SpaceBetweenVerticesX = static_cast<float>(TileSizeX)  / MeshResolution;
+  float SpaceBetweenVerticesY = static_cast<float>(TileSizeY)  / MeshResolution;
   static int StaticMeshIndex = 0;
-  for( int i = 0; i < VerticesInLine; i++ )
+  for( int i = 0; i < VerticesInLineX; i++ )
   {
-    float X = (i * GridSectionSize);
-    const int RoadMapX = i * 255 / VerticesInLine;
-    for( int j = 0; j < VerticesInLine; j++ )
+    float X = (i * SpaceBetweenVerticesX);
+    for( int j = 0; j < VerticesInLineY; j++ )
     {
-      float Y = (j * GridSectionSize);
-      const int RoadMapY = j * 255 / VerticesInLine;
-      const int CellIndex = RoadMapY + 255 * RoadMapX;
+      float Y = (j * SpaceBetweenVerticesY);
       float HeightValue = GetHeightForLandscape( FVector( (Offset.X + X),
                                                           (Offset.Y + Y),
                                                           0));
@@ -253,17 +254,17 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
   }
 
   //// Triangles formation. 2 triangles per section.
-  for(int i = 0; i < VerticesInLine - 1; i++)
+  for(int i = 0; i < VerticesInLineX - 1; i++)
   {
-    for(int j = 0; j < VerticesInLine - 1; j++)
+    for(int j = 0; j < VerticesInLineY - 1; j++)
     {
-      Triangles.Add(   j       + (   i       * VerticesInLine ) );
-      Triangles.Add( ( j + 1 ) + (   i       * VerticesInLine ) );
-      Triangles.Add(   j       + ( ( i + 1 ) * VerticesInLine ) );
+      Triangles.Add(   j       + (   i       * VerticesInLineX ) );
+      Triangles.Add( ( j + 1 ) + (   i       * VerticesInLineX ) );
+      Triangles.Add(   j       + ( ( i + 1 ) * VerticesInLineX ) );
 
-      Triangles.Add( ( j + 1 ) + (   i       * VerticesInLine ) );
-      Triangles.Add( ( j + 1 ) + ( ( i + 1 ) * VerticesInLine ) );
-      Triangles.Add(   j       + ( ( i + 1 ) * VerticesInLine ) );
+      Triangles.Add( ( j + 1 ) + (   i       * VerticesInLineX ) );
+      Triangles.Add( ( j + 1 ) + ( ( i + 1 ) * VerticesInLineX ) );
+      Triangles.Add(   j       + ( ( i + 1 ) * VerticesInLineX ) );
     }
   }
 
@@ -560,7 +561,7 @@ void UOpenDriveToMap::GenerateAll(const boost::optional<carla::road::Map>& Param
   GenerateLaneMarks(ParamCarlaMap, MinLocation, MaxLocation);
   // GenerateSpawnPoints(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Terrain..... "));
-  CreateTerrain(12800, 2048);
+  CreateTerrain(2,2, 64);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Tree positions..... "));
   GenerateTreePositions(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Misc stuff..... "));
