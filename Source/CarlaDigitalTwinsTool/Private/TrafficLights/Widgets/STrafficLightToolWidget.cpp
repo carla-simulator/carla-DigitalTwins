@@ -606,9 +606,9 @@ FReply STrafficLightToolWidget::OnDeleteHeadClicked(int32 Index)
     check(Heads.IsValidIndex(Index));
 
     Heads[Index].Modules.Empty();
-    PreviewViewport->ClearModuleMeshes();
     Heads.RemoveAt(Index);
-    RefreshHeadList();
+
+    Rebuild();
     return FReply::Handled();
 }
 
