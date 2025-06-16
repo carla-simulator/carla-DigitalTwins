@@ -11,37 +11,37 @@ static TMap<FString, TSoftObjectPtr<UStaticMesh>> GMeshCache;
 static const TMap<FString, FString> GKeyToPath = {
     // Vertical With Visor
     { "Vertical_WithVisor_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Black_Module_01.SM_TrafficLights_Black_Module_01" },
     { "Vertical_WithVisor_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Module_01.SM_TrafficLights_Module_01" },
 
     // Vertical No Visor
     { "Vertical_NoVisor_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Black_Module_02.SM_TrafficLights_Black_Module_02" },
     { "Vertical_NoVisor_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Module_02.SM_TrafficLights_Module_02" },
 
     // Horizontal With Visor
     { "Horizontal_WithVisor_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Horizontal_Black_Module_01."
       "SM_TrafficLights_Horizontal_Black_Module_01" },
     { "Horizontal_WithVisor_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Horizontal_Module_01."
       "SM_TrafficLights_Horizontal_Module_01" },
 
     // Horizontal No Visor
     { "Horizontal_NoVisor_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Horizontal_Black_Module_02."
       "SM_TrafficLights_Horizontal_Black_Module_02" },
     { "Horizontal_NoVisor_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Horizontal_Module_02."
       "SM_TrafficLights_Horizontal_Module_02" },
 };

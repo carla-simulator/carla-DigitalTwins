@@ -10,24 +10,24 @@ static TMap<ETLLightType, TSoftObjectPtr<UMaterialInterface>> GLightMatCache;
 
 static const TMap<FString, FString> GBodyKeyToPath = {
     { "Module1_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "M_TrafficLight_ModuleBlack_01.M_TrafficLight_ModuleBlack_01" },
     { "Module1_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "M_TrafficLight_Module_01.M_TrafficLight_Module_01" },
 
     { "Module2_Black",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "M_TrafficLight_ModuleBlack_02.M_TrafficLight_ModuleBlack_02" },
     { "Module2_Color",
-      "/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
+      "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "M_TrafficLight_Module_02.M_TrafficLight_Module_02" },
 };
 
 static const TMap<ETLLightType, FString> GLightTypeToPath = {
-    { ETLLightType::Red,    TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
-    { ETLLightType::Yellow, TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
-    { ETLLightType::Green,  TEXT("/CarlaDigitalTwinsTool/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") }
+    { ETLLightType::Red,    TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
+    { ETLLightType::Yellow, TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") },
+    { ETLLightType::Green,  TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/M_TrafficLights_Inst.M_TrafficLights_Inst") }
 };
 
 UMaterialInterface* FMaterialFactory::GetModuleBodyMaterial(
