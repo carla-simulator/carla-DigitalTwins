@@ -1344,12 +1344,15 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 HeadIndex)
 FReply STrafficLightToolWidget::OnDeleteModuleClicked(int32 HeadIndex, int32 ModuleIndex)
 {
     check(Heads.IsValidIndex(HeadIndex));
-    check(Heads[HeadIndex].Modules.IsValidIndex(ModuleIndex));
-
-    Heads[HeadIndex].Modules.RemoveAt(ModuleIndex);
+    auto& Head = Heads[HeadIndex];
+    check(Head.Modules.IsValidIndex(ModuleIndex));
+    Head.Modules.RemoveAt(ModuleIndex);
+    RebuildModuleChain(Head);
     PreviewViewport->ClearModuleMeshes();
-    ChangeModulesOrientation(HeadIndex, Heads[HeadIndex].Orientation);
-    UpdateModuleMeshesInViewport(HeadIndex);
+    for (auto& M : Head.Modules)
+    {
+        M.ModuleMeshComponent = PreviewViewport->AddModuleMesh(Head, M);
+    }
     RefreshHeadList();
     return FReply::Handled();
 }
