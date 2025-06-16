@@ -14,7 +14,7 @@ void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 
     ViewportClient = MakeShareable(new FEditorViewportClient(nullptr, PreviewScene.Get(), nullptr));
     ViewportClient->bSetListenerPosition = false;
-    ViewportClient->SetRealtime(true);
+    ViewportClient->SetRealtime(false);
     ViewportClient->SetViewLocation(FVector(-300, 0, 150));
     ViewportClient->SetViewRotation(FRotator(-15, 0, 0));
     ViewportClient->SetViewMode(VMI_Lit);
@@ -177,5 +177,9 @@ void STrafficLightPreviewViewport::Rebuild(TArray<FTLHead>& Heads)
         {
             Module.ModuleMeshComponent = AddModuleMesh(Head, Module);
         }
+    }
+    if (SceneViewport.IsValid())
+    {
+        SceneViewport->Invalidate();
     }
 }

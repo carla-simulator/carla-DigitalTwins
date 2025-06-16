@@ -276,6 +276,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         {
                             Mod.LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Mod.EmissiveIntensity);
                         }
+                        Rebuild();
                     })
                 ]
             ]
@@ -285,39 +286,29 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
             .AutoHeight()
             .Padding(0,2)
             [
-                SNew(SComboButton)
-                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
-                .MenuPlacement(MenuPlacement_BelowAnchor)
-                .ButtonContent()
-                [
-                    SNew(STextBlock)
-                    .Text(FText::FromString("Pick Light Color"))
-                ]
-                .OnGetMenuContent_Lambda([this, HeadIndex, ModuleIndex]()
+            SNew(SBorder)
+            .BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+            .Padding(4)
+            [
+                SNew(SColorPicker)
+                .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]()
                 {
-                    return SNew(SBorder)
-                        .BorderImage(FAppStyle::GetBrush("Menu.Background"))
-                        .Padding(4)
-                    [
-                        SNew(SColorPicker)
-                        .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]() {
-                            return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
-                        })
-                        .UseAlpha(false)
-                        .OnlyRefreshOnMouseUp(true)
-                        .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor) {
-                            auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
-                            Mod.EmissiveColor = NewColor;
-                            if (Mod.LightMID)
-                            {
-                                Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
-                            }
-                            Rebuild();
-                        })
-                    ];
+                    return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
+                })
+                .UseAlpha(false)
+                .OnlyRefreshOnMouseUp(false)
+                .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor)
+                {
+                    auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
+                    Mod.EmissiveColor = NewColor;
+                    if (Mod.LightMID)
+                    {
+                    Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                    }
+                    PreviewViewport->Rebuild(Heads);
                 })
             ]
-
+            ]
             // — Has Visor Checkbox —
             + SVerticalBox::Slot()
             .AutoHeight()
