@@ -8,15 +8,9 @@
 
 #include "CoreMinimal.h"
 #include "Materials/MaterialInterface.h"
-#include "TrafficLights/TLLightType.h"
-
-struct FTLHead;
-struct FTLModule;
 
 class FMaterialFactory
 {
 public:
-    static UMaterialInterface* GetModuleBodyMaterial(const FTLHead& Head, const FTLModule& Module);
-
-    static UMaterialInterface* GetLightMaterial(ETLLightType LightType);
+    static UMaterialInstanceDynamic* GetLightMaterialInstance(UObject* Outer);
 };
