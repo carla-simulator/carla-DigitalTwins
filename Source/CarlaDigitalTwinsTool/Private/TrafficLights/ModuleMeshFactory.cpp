@@ -44,6 +44,20 @@ static const TMap<FString, FString> GKeyToPath = {
       "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/"
       "SM_TrafficLights_Horizontal_Module_02."
       "SM_TrafficLights_Horizontal_Module_02" },
+
+    // Crosswalk Module
+    { "Crosswalk_Black",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Black_Crosswalk_03.SM_TrafficLights_Black_Crosswalk_03" },
+    {"Crosswalk_Black",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Black_Crosswalk_04.SM_TrafficLights_Black_Crosswalk_04"},
+    { "Crosswalk_01",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Crosswalk_01.SM_TrafficLights_Crosswalk_01" },
+    { "Crosswalk_02",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Crosswalk_02.SM_TrafficLights_Crosswalk_02" },
+    { "Crosswalk_03",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Crosswalk_03.SM_TrafficLights_Crosswalk_03" },
+    { "Crosswalk_04",
+        "/Game/Carla/Static/TrafficLight/TrafficLights2025/TrafficLights/SM_TrafficLights_Crosswalk_04.SM_TrafficLights_Crosswalk_04" },
 };
 
 UStaticMesh* FModuleMeshFactory::GetMeshForModule(const FTLHead& Head, const FTLModule& Module)
