@@ -38,9 +38,9 @@
 #include "ProceduralMeshConversion.h"
 #include "EditorLevelLibrary.h"
 #if ENGINE_MAJOR_VERSION > 4
-
 #include "Subsystems/UnrealEditorSubsystem.h"
 #include "Editor/Transactor.h"
+#include "WorldPartition/WorldPartitionSubsystem.h"
 #endif
 #include "ContentBrowserModule.h"
 #include "Materials/MaterialInstanceConstant.h"
@@ -61,6 +61,20 @@
 #include "DrawDebugHelpers.h"
 #include "Paths/GenerationPathsHelper.h"
 #if WITH_EDITOR
+
+
+
+struct FTerrainMeshData
+{
+  int32 MeshIndex;
+  FVector2D Offset;
+  TArray<FVector> Vertices;
+  TArray<int32> Triangles;
+  TArray<FVector2D> UVs;
+  TArray<FVector> Normals;
+  TArray<FProcMeshTangent> Tangents;
+};
+
 UOpenDriveToMap::UOpenDriveToMap()
 {
   AddToRoot();
@@ -195,23 +209,118 @@ void UOpenDriveToMap::CreateMap()
 
 void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int NumberOfTerrainY, const float MeshGridResolution)
 {
-  TArray<AActor*> FoundActors;
-  UGameplayStatics::GetAllActorsOfClass(UEditorLevelLibrary::GetEditorWorld(), AStaticMeshActor::StaticClass(), FoundActors);
-  FVector BoxExtent = FVector(TileSize, TileSize,0);
-  FVector MinBox = FVector(MinPosition.X, MaxPosition.Y,0);
+
+
+  if (NumberOfTerrainX <= 0 || NumberOfTerrainY <= 0 || MeshGridResolution <= 0) return;
 
   float TileSizeX = TileSize / NumberOfTerrainX;
   float TileSizeY = TileSize / NumberOfTerrainY;
 
-  for( int i = 0; i <= NumberOfTerrainY; i++ )
+  FVector MinBox(MinPosition.X, MaxPosition.Y, 0);
+
+  TArray<FTerrainMeshData> AllMeshData;
+  AllMeshData.SetNum((NumberOfTerrainX + 1) * (NumberOfTerrainY + 1));
+
+  ParallelFor((NumberOfTerrainX + 1) * (NumberOfTerrainY + 1), [&](int32 Index)
   {
-    for( int j = 0; j <= NumberOfTerrainX; j++ )
+    int32 x = Index % (NumberOfTerrainX + 1);
+    int32 y = Index / (NumberOfTerrainX + 1);
+
+    FVector2D Offset(MinBox.X + x * TileSizeX, MinBox.Y + y * TileSizeY);
+
+    FTerrainMeshData& MeshData = AllMeshData[Index];
+    MeshData.MeshIndex = Index;
+    MeshData.Offset = Offset;
+
+    const int32 VertsX = MeshGridResolution + 1;
+    const int32 VertsY = MeshGridResolution + 1;
+    const float StepX = TileSizeX / MeshGridResolution;
+    const float StepY = TileSizeY / MeshGridResolution;
+    //const float HeightScale = 100.0f; // cm
+
+    TArray<FVector>& Vertices = MeshData.Vertices;
+    TArray<int32>& Triangles = MeshData.Triangles;
+    TArray<FVector2D>& UVs = MeshData.UVs;
+    TArray<FVector>& Normals = MeshData.Normals;
+    TArray<FProcMeshTangent>& Tangents = MeshData.Tangents;
+
+    Vertices.Reserve(VertsX * VertsY);
+    UVs.Reserve(VertsX * VertsY);
+    Triangles.Reserve((VertsX - 1) * (VertsY - 1) * 6);
+
+    for (int32 iy = 0; iy < VertsY; ++iy)
     {
-      // Offset that each procedural mesh is displaced to accomodate all the tiles
-      FVector2D Offset( MinBox.X + i * TileSizeX, MinBox.Y + j * TileSizeY);
-      CreateTerrainMesh(i * NumberOfTerrainY + j, Offset, TileSizeX, TileSizeY, MeshGridResolution );
+      for (int32 ix = 0; ix < VertsX; ++ix)
+      {
+        float X = ix * StepX;
+        float Y = iy * StepY;
+        float Height = GetHeightForLandscape(FVector(Offset.X + X, Offset.Y + Y, 0));
+        Vertices.Add(FVector(X, Y, Height));
+        UVs.Add(FVector2D(static_cast<float>(ix) / MeshGridResolution, static_cast<float>(iy) / MeshGridResolution));
+      }
     }
-  }
+
+    for (int32 iy = 0; iy < VertsY - 1; ++iy)
+    {
+      for (int32 ix = 0; ix < VertsX - 1; ++ix)
+      {
+        int32 i0 = ix + iy * VertsX;
+        int32 i1 = (ix + 1) + iy * VertsX;
+        int32 i2 = ix + (iy + 1) * VertsX;
+        int32 i3 = (ix + 1) + (iy + 1) * VertsX;
+
+        Triangles.Add(i0);
+        Triangles.Add(i2);
+        Triangles.Add(i1);
+
+        Triangles.Add(i3);
+        Triangles.Add(i1);
+        Triangles.Add(i2);
+      }
+    }
+
+  });
+
+  // Ahora en GameThread, procesar cada mesh para terminar y spawn actors
+  AsyncTask(ENamedThreads::GameThread, [this, AllMeshData = MoveTemp(AllMeshData)]() mutable
+  {
+    for (const FTerrainMeshData& MeshData : AllMeshData)
+    {
+      TArray<FVector> Normals;
+      TArray<FProcMeshTangent> Tangents;
+
+      UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UVs, Normals, Tangents);
+
+      FProceduralCustomMesh ProcMeshData;
+      ProcMeshData.Vertices = MeshData.Vertices;
+      ProcMeshData.Triangles = MeshData.Triangles;
+      ProcMeshData.Normals = Normals;
+      ProcMeshData.UV0 = MeshData.UVs;
+
+      UStaticMesh* StaticMesh = UMapGenFunctionLibrary::CreateMesh(ProcMeshData, Tangents, DefaultLandscapeMaterial, MapName, "Terrain", FName(*FString::Printf(TEXT("SM_LandscapeMesh_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile())));
+
+      if (!StaticMesh) continue;
+
+      UWorld* World = GetEditorWorld();
+
+      if (!World) continue;
+
+      AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(MeshData.Offset.X, MeshData.Offset.Y, 0), FRotator::ZeroRotator);
+      if (!Actor) continue;
+
+      UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+      MeshComp->SetStaticMesh(StaticMesh);
+      Actor->SetActorLabel(FString::Printf(TEXT("LandscapeActor_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile()));
+      Actor->Tags.Add("LandscapeToMove");
+      MeshComp->CastShadow = false;
+
+#if ENGINE_MAJOR_VERSION > 4
+      Actor->SetIsSpatiallyLoaded(true);
+#endif
+
+      Landscapes.Add(Actor);
+    }
+  });
 }
 
 void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int TileSizeX, const int TileSizeY, const float MeshResolution)
@@ -285,6 +394,9 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
   Mesh->SetStaticMesh(MeshToSet);
   MeshActor->SetActorLabel("SM_LandscapeActor" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() );
   MeshActor->Tags.Add(FName("LandscapeToMove"));
+#if ENGINE_MAJOR_VERSION > 4
+  MeshActor->SetIsSpatiallyLoaded(true);
+#endif
   Mesh->CastShadow = false;
   Landscapes.Add(MeshActor);
   StaticMeshIndex++;
@@ -517,7 +629,13 @@ void UOpenDriveToMap::LoadMap()
       GenerateTileStandalone();
     }while(GoNextTile());
     RemoveFromRoot();
-
+    UWorld* World = GEditor->GetEditorWorldContext().World();
+    if (World)
+    {
+      FString CurrentMapName = World->GetMapName();
+      CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
+      UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
+    }
 #endif
 
   }
@@ -545,6 +663,9 @@ TArray<AActor*> UOpenDriveToMap::GenerateMiscActors(float Offset, FVector MinLoc
     Spawner->Tags.Add(FName("MiscSpawnPosition"));
     Spawner->Tags.Add(FName(cl.second.c_str()));
     Spawner->SetActorLabel("MiscSpawnPosition" + FString::FromInt(i));
+#if ENGINE_MAJOR_VERSION > 4
+    Spawner->SetIsSpatiallyLoaded(true);
+#endif
     ++i;
     Returning.Add(Spawner);
   }
@@ -561,7 +682,7 @@ void UOpenDriveToMap::GenerateAll(const boost::optional<carla::road::Map>& Param
   GenerateLaneMarks(ParamCarlaMap, MinLocation, MaxLocation);
   // GenerateSpawnPoints(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Terrain..... "));
-  CreateTerrain(2,2, 64);
+  CreateTerrain(5,5, 64);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Tree positions..... "));
   GenerateTreePositions(ParamCarlaMap, MinLocation, MaxLocation);
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::GenerateAll() Generating Misc stuff..... "));
@@ -588,103 +709,132 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
 
   start = FPlatformTime::Seconds();
   static int index = 0;
-  for (const auto &PairMap : Meshes)
-  {
-    for( auto& Mesh : PairMap.second )
-    {
-      if (!Mesh->GetVertices().size())
-      {
-        continue;
-      }
-      if (!Mesh->IsValid()) {
-        continue;
-      }
 
-      if(PairMap.first == carla::road::Lane::LaneType::Driving)
+  struct FPreparedMeshData
+  {
+    FProceduralCustomMesh MeshData;
+    FVector MeshCentroid;
+    carla::road::Lane::LaneType LaneType;
+    int32 Index;
+  };
+
+  TArray<FPreparedMeshData> PreparedMeshes;
+  FCriticalSection Mutex;
+  int32 LocalIndex = 0;
+
+  for (const auto& PairMap : Meshes)
+  {
+    const auto& LaneType = PairMap.first;
+    const auto& MeshList = PairMap.second;
+
+    ParallelFor(MeshList.size(), [&](int32 i)
+    {
+      const auto& Mesh = MeshList[i];
+      if (!Mesh->IsValid() || ( Mesh->GetVertices().size() == 0)) 
+        return;
+
+      auto& Vertices = Mesh->GetVertices();
+
+      if (LaneType == carla::road::Lane::LaneType::Driving)
       {
-        for( auto& Vertex : Mesh->GetVertices() )
+        for (auto& Vertex : Vertices)
         {
-          FVector VertexFVector = Vertex.ToFVector();
-          Vertex.z += GetHeight(Vertex.x, Vertex.y, DistanceToLaneBorder(ParamCarlaMap,VertexFVector) > 65.0f );
+          FVector FV = Vertex.ToFVector();
+          Vertex.z += GetHeight(Vertex.x, Vertex.y, DistanceToLaneBorder(ParamCarlaMap, FV) > 65.0f);
         }
 #if ENGINE_MAJOR_VERSION < 5
         carla::geom::Simplification Simplify(0.15);
         Simplify.Simplificate(Mesh);
-  #endif
-      }else{
-        for( auto& Vertex : Mesh->GetVertices() )
+#endif
+      }
+      else
+      {
+        for (auto& Vertex : Vertices)
         {
           Vertex.z += GetHeight(Vertex.x, Vertex.y, false) + 0.15f;
         }
       }
 
-      AStaticMeshActor* TempActor = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>();
-      UStaticMeshComponent* StaticMeshComponent = TempActor->GetStaticMeshComponent();
-      TempActor->SetActorLabel(FString("SM_Lane_") + FString::FromInt(index));
+      FVector Centroid(0);
+      for (const auto& V : Vertices) Centroid += V.ToFVector();
+      Centroid /= Vertices.size();
 
-      StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-      if(DefaultRoadMaterial && PairMap.first == carla::road::Lane::LaneType::Driving)
+      for (auto& V : Vertices)
       {
-        StaticMeshComponent->SetMaterial(0, DefaultRoadMaterial);
-        StaticMeshComponent->CastShadow = false;
-        TempActor->SetActorLabel(FString("SM_DrivingLane_") + FString::FromInt(index));
-      }
-      if(DefaultSidewalksMaterial && PairMap.first == carla::road::Lane::LaneType::Sidewalk)
-      {
-        StaticMeshComponent->SetMaterial(0, DefaultSidewalksMaterial);
-        TempActor->SetActorLabel(FString("SM_Sidewalk_") + FString::FromInt(index));
-      }
-      FVector MeshCentroid = FVector(0,0,0);
-      for( auto Vertex : Mesh->GetVertices() )
-      {
-        MeshCentroid += Vertex.ToFVector();
+        V.x -= Centroid.X;
+        V.y -= Centroid.Y;
+        V.z -= Centroid.Z;
       }
 
-      MeshCentroid /= Mesh->GetVertices().size();
+      FPreparedMeshData Data;
+      Data.MeshData = *Mesh;
+      Data.MeshCentroid = Centroid;
+      Data.LaneType = LaneType;
 
-      for( auto& Vertex : Mesh->GetVertices() )
+      int32 AssignedIndex;
       {
-       Vertex.x -= MeshCentroid.X;
-       Vertex.y -= MeshCentroid.Y;
-       Vertex.z -= MeshCentroid.Z;
+        FScopeLock Lock(&Mutex);
+        AssignedIndex = LocalIndex++;
+        Data.Index = AssignedIndex;
+        PreparedMeshes.Add(Data);
       }
+    });
+  }
 
-      const FProceduralCustomMesh MeshData = *Mesh;
-      TArray<FVector> Normals;
-      TArray<FProcMeshTangent> Tangents;
+  for (FPreparedMeshData& Entry : PreparedMeshes)
+  {
+    const FProceduralCustomMesh& Mesh = Entry.MeshData;
+    const FVector& Centroid = Entry.MeshCentroid;
+    const int32 Index = Entry.Index;
+    const carla::road::Lane::LaneType LaneType = Entry.LaneType;
 
-      UKismetProceduralMeshLibrary::CalculateTangentsForMesh(
-        MeshData.Vertices,
-        MeshData.Triangles,
-        MeshData.UV0,
-        Normals,
-        Tangents
-      );
 
-      if(PairMap.first == carla::road::Lane::LaneType::Sidewalk)
-      {
-        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultSidewalksMaterial, MapName, "DrivingLane", FName(TEXT("SM_SidewalkMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
-        StaticMeshComponent->SetStaticMesh(MeshToSet);
-      }
+    TArray<FProcMeshTangent> Tangents;
+    UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Entry.MeshData.Vertices, Entry.MeshData.Triangles, Entry.MeshData.UV0, Entry.MeshData.Normals, Tangents);
 
-      if(PairMap.first == carla::road::Lane::LaneType::Driving)
-      {
-        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultRoadMaterial, MapName, "DrivingLane", FName(TEXT("SM_DrivingLaneMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
-        StaticMeshComponent->SetStaticMesh(MeshToSet);
-      }
-      TempActor->SetActorLocation(MeshCentroid * 100);
-      TempActor->Tags.Add(FName("RoadLane"));
-      // ActorMeshList.Add(TempActor);
-      StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-      TempActor->SetActorEnableCollision(true);
-      index++;
+    AStaticMeshActor* TempActor = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>();
+    UStaticMeshComponent* StaticMeshComponent = TempActor->GetStaticMeshComponent();
+    TempActor->SetActorLabel(FString("SM_Lane_") + FString::FromInt(Index));
+    StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    if (LaneType == carla::road::Lane::LaneType::Driving && DefaultRoadMaterial)
+    {
+      StaticMeshComponent->SetMaterial(0, DefaultRoadMaterial);
+      StaticMeshComponent->CastShadow = false;
+      TempActor->SetActorLabel(FString("SM_DrivingLane_") + FString::FromInt(Index));
     }
+
+    if (LaneType == carla::road::Lane::LaneType::Sidewalk && DefaultSidewalksMaterial)
+    {
+      StaticMeshComponent->SetMaterial(0, DefaultSidewalksMaterial);
+      TempActor->SetActorLabel(FString("SM_Sidewalk_") + FString::FromInt(Index));
+    }
+
+    UStaticMesh* FinalMesh = nullptr;
+
+    if (LaneType == carla::road::Lane::LaneType::Sidewalk)
+    {
+      FinalMesh = UMapGenFunctionLibrary::CreateMesh(Entry.MeshData, Tangents, DefaultSidewalksMaterial, MapName, "Sidewalk", FName(TEXT("SM_SidewalkMesh" + FString::FromInt(Index) + GetStringForCurrentTile())));
+    }
+    else if (LaneType == carla::road::Lane::LaneType::Driving)
+    {
+      FinalMesh = UMapGenFunctionLibrary::CreateMesh(Entry.MeshData, Tangents, DefaultRoadMaterial, MapName, "DrivingLane", FName(TEXT("SM_DrivingLaneMesh" + FString::FromInt(Index) + GetStringForCurrentTile())));
+    }
+
+    StaticMeshComponent->SetStaticMesh(FinalMesh);
+    TempActor->SetActorLocation(Centroid * 100);
+    TempActor->Tags.Add(FName("RoadLane"));
+    TempActor->SetActorEnableCollision(true);
+
+#if ENGINE_MAJOR_VERSION > 4
+    TempActor->SetIsSpatiallyLoaded(true);
+#endif
   }
 
   end = FPlatformTime::Seconds();
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Mesh spawnning and translation code executed in %f seconds."), end - start);
 }
+
 
 void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>& ParamCarlaMap, FVector MinLocation, FVector MaxLocation )
 {
@@ -775,6 +925,9 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
     TempActor->SetActorLocation(MeshCentroid * 100);
     TempActor->Tags.Add(*FString(lanemarkinfo[index].c_str()));
     TempActor->Tags.Add(FName("RoadLane"));
+#if ENGINE_MAJOR_VERSION > 4
+      TempActor->SetIsSpatiallyLoaded(true);
+#endif
     LaneMarkerActorList.Add(TempActor);
     index++;
     meshindex++;
@@ -826,6 +979,9 @@ void UOpenDriveToMap::GenerateTreePositions( const boost::optional<carla::road::
     Spawner->Tags.Add(FName("TreeSpawnPosition"));
     Spawner->Tags.Add(FName(cl.second.c_str()));
     Spawner->SetActorLabel("TreeSpawnPosition" + FString::FromInt(i) + GetStringForCurrentTile() );
+#if ENGINE_MAJOR_VERSION > 4
+    Spawner->SetIsSpatiallyLoaded(true);
+#endif
     ++i;
   }
 }
@@ -1128,4 +1284,20 @@ void UOpenDriveToMap::UpdateGenericActorCoordinates(
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("%s New location %s"),
         *Actor->GetName(), *LocalLocation.ToString());
 }
+
+void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
+{
+  UWorld* World = GEngine->GetWorldFromContextObject(this, EGetWorldErrorMode::LogAndReturnNull);
+  if (World)
+  {
+    UWorldPartitionSubsystem* WorldPartitionSubsystem = World->GetSubsystem<UWorldPartitionSubsystem>();
+    if (WorldPartitionSubsystem)
+    {
+      // Call UnloadRegion with a bounding box
+      //WorldPartitionSubsystem->UnloadRegion(World, RegionBox);
+    }
+  }
+}
+
+
 #endif

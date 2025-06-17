@@ -87,7 +87,6 @@ public:
   UFUNCTION(BlueprintCallable)
   UWorld* GetGameWorld();
 
-
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, ALargeMapManager* LargeMapManager);
 
@@ -97,6 +96,9 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void UpdateInstancedMeshCoordinates(
       UHierarchicalInstancedStaticMeshComponent* Component, FVector TileOrigin);
+
+  UFUNCTION(BlueprintCallable)
+  void UnloadWorldPartitionRegion(const FBox& RegionBox);
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="File")
   FString FilePath;
