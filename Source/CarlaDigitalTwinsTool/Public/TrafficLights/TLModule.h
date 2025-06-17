@@ -15,23 +15,26 @@ struct FTLModule
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
+    UPROPERTY(Transient)
     UStaticMesh* ModuleMesh { nullptr };
 
     UPROPERTY(Transient)
     UStaticMeshComponent* ModuleMeshComponent { nullptr };
 
     UPROPERTY(Transient)
-    UMaterialInstanceDynamic* BodyMID {nullptr};
-
-    UPROPERTY(Transient)
     UMaterialInstanceDynamic* LightMID {nullptr};
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
+    int32 U {0};
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
+    int32 V {0};
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
     float EmissiveIntensity {25.0f};
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic Light|Module")
-    FLinearColor EmissiveColor {FLinearColor::Red};
+    FLinearColor EmissiveColor {};
 
     /** Local transform relative to parent head */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
@@ -42,7 +45,7 @@ struct FTLModule
     FTransform Offset { FTransform::Identity };
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
-    ETLLightType LightType { ETLLightType::SolidColor };
+    ETLLightType LightType { ETLLightType::SolidColorGreen };
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
     bool bHasVisor { false };
