@@ -14,6 +14,7 @@
 #include "Widgets/SViewport.h"
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
+#include "TrafficLights/LightTypeDataTable.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -31,14 +32,15 @@ public:
     /** Destructor: clear viewport reference to avoid crash */
     virtual ~STrafficLightPreviewViewport();
 
+public:
+    UPROPERTY(EditAnywhere, Category="Data Table")
+    UDataTable* LightTypesTable {nullptr};
+
     /** Head */
 public:
 
     /** Set the head style  */
     void SetHeadStyle(int32 Index, ETLHeadStyle Style);
-
-    void AddBackplateMesh   (int32 HeadIndex);
-    void RemoveBackplateMesh(int32 HeadIndex);
 
     /** Modules */
 public:
@@ -48,27 +50,16 @@ public:
     void ResetFrame(const UStaticMeshComponent* Comp);
 
 private:
-    FLinearColor InitialColorFor(ETLHeadStyle Style) const;
+    void LoadLightTypeDataTable();
+    FVector2D GetAtlasCoordsForLightType(ETLLightType LightType) const;
 
 private:
-    /** Holds the preview scene (off-screen world) */
     TUniquePtr<FPreviewScene> PreviewScene;
-
-    /** Viewport client driving the scene */
     TSharedPtr<FEditorViewportClient> ViewportClient;
-
-    /** Slate viewport wrapper */
     TSharedPtr<FSceneViewport> SceneViewport;
     TSharedPtr<SViewport> ViewportWidget;
 
-    /** Mesh components spawned for each head */
     TArray<UStaticMeshComponent*> HeadMeshComponents;
-
-    TArray<UStaticMeshComponent*> BackplateMeshComponents;
-
-    /** Mesh components spawned for each head */
     TArray<UStaticMeshComponent*> ModuleMeshComponents;
 
-    TArray<UMaterialInstanceDynamic*> HeadDynMats;
-    TArray<UMaterialInstanceDynamic*> ModuleDynMats;
 };

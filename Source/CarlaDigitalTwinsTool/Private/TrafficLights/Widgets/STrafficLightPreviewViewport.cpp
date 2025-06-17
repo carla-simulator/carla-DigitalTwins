@@ -5,11 +5,14 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TrafficLights/TLHead.h"
+#include "TrafficLights/LightTypeDataTable.h"
 #include "UObject/UObjectGlobals.h"
 
 
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 {
+    LoadLightTypeDataTable();
+
     PreviewScene = MakeUnique<FPreviewScene>(FPreviewScene::ConstructionValues());
 
     ViewportClient = MakeShareable(new FEditorViewportClient(nullptr, PreviewScene.Get(), nullptr));
@@ -36,6 +39,21 @@ void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
     ];
 }
 
+void STrafficLightPreviewViewport::LoadLightTypeDataTable()
+{
+    if (LightTypesTable == nullptr)
+    {
+        LightTypesTable = LoadObject<UDataTable>(
+            nullptr,
+            TEXT("/Game/Carla/DataTables/LightTypes.LightTypes")
+        );
+    }
+    if (LightTypesTable == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load LightTypes data table"));
+    }
+}
+
 STrafficLightPreviewViewport::~STrafficLightPreviewViewport()
 {
     if (ViewportClient.IsValid())
@@ -50,73 +68,30 @@ void STrafficLightPreviewViewport::SetHeadStyle(int32 Index, ETLHeadStyle Style)
 {
 }
 
-void STrafficLightPreviewViewport::AddBackplateMesh(int32 HeadIndex)
+FVector2D STrafficLightPreviewViewport::GetAtlasCoordsForLightType(ETLLightType LightType) const
 {
-    if (!HeadMeshComponents.IsValidIndex(HeadIndex))
+    if (LightTypesTable == nullptr)
     {
-        return;
+        UE_LOG(LogTemp, Error, TEXT("LightTypesTable is not set"));
+        return FVector2D::ZeroVector;
+    }
+    const UEnum* EnumPtr = StaticEnum<ETLLightType>();
+    if (!EnumPtr)
+    {
+        return FVector2D::ZeroVector;
     }
 
-    if (BackplateMeshComponents.IsValidIndex(HeadIndex) &&
-        BackplateMeshComponents[HeadIndex] != nullptr)
+    const FString EnumName = EnumPtr->GetNameStringByValue(static_cast<int64>(LightType));
+    const FName   RowName(*EnumName);
+
+    if (const FLightTypeRow* Row = LightTypesTable->FindRow<FLightTypeRow>(
+            RowName, TEXT("GetAtlasCoordsForLightType")))
     {
-        return;
+        return Row->AtlasCoords;
     }
 
-    const FVector HeadLoc = HeadMeshComponents[HeadIndex]->GetComponentLocation();
-    const FVector BackplateLoc = HeadLoc + FVector(10.f, 0.f, 0.f);
+    return FVector2D::ZeroVector;
 
-    UStaticMeshComponent* Comp = NewObject<UStaticMeshComponent>(
-        PreviewScene->GetWorld()->GetCurrentLevel(), NAME_None, RF_Transient
-    );
-    Comp->SetStaticMesh(
-        Cast<UStaticMesh>(StaticLoadObject(
-            UStaticMesh::StaticClass(), nullptr,
-            TEXT("/Engine/BasicShapes/Cube.Cube")
-        ))
-    );
-    Comp->SetWorldScale3D(FVector(0.1f, 1.2f, 1.2f));
-    Comp->SetWorldLocation(BackplateLoc);
-
-    Comp->RegisterComponentWithWorld(PreviewScene->GetWorld());
-    Comp->AttachToComponent(
-        HeadMeshComponents[HeadIndex],
-        FAttachmentTransformRules::KeepWorldTransform
-    );
-
-    if (BackplateMeshComponents.Num() <= HeadIndex)
-    {
-        BackplateMeshComponents.SetNum(HeadMeshComponents.Num());
-    }
-    BackplateMeshComponents[HeadIndex] = Comp;
-}
-
-void STrafficLightPreviewViewport::RemoveBackplateMesh(int32 HeadIndex)
-{
-    if (!BackplateMeshComponents.IsValidIndex(HeadIndex))
-        return;
-
-    if (UStaticMeshComponent* Comp = BackplateMeshComponents[HeadIndex])
-    {
-        Comp->DestroyComponent();
-        BackplateMeshComponents[HeadIndex] = nullptr;
-    }
-}
-
-FLinearColor STrafficLightPreviewViewport::InitialColorFor(ETLHeadStyle Style) const
-{
-    switch (Style)
-    {
-        case ETLHeadStyle::NorthAmerican:
-            return FLinearColor::Black;
-        case ETLHeadStyle::European:
-            return FLinearColor::Blue;
-        case ETLHeadStyle::Asian:
-            return FLinearColor::White;
-        case ETLHeadStyle::Custom:
-        default:
-            return FLinearColor(1,0,1);
-    }
 }
 
 UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData)
@@ -132,19 +107,19 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
         return nullptr;
     }
     PreviewScene->AddComponent(Comp, ModuleWorldTransform);
-
     Comp->SetStaticMesh(ModuleData.ModuleMesh);
-    if (UMaterialInterface* BodyMat = FMaterialFactory::GetModuleBodyMaterial(Head, ModuleData))
+
+    if (ModuleData.LightMID == nullptr)
     {
-        UMaterialInstanceDynamic* BodyMID = UMaterialInstanceDynamic::Create(BodyMat, Comp);
-        Comp->SetMaterial(0, BodyMID);
-        ModuleData.BodyMID = BodyMID;
+        ModuleData.LightMID = FMaterialFactory::GetLightMaterialInstance(Comp);
     }
-    if (UMaterialInterface* LightMat = FMaterialFactory::GetLightMaterial(ModuleData.LightType))
+    UMaterialInstanceDynamic* LightMID = ModuleData.LightMID;
+    if (LightMID)
     {
-        UMaterialInstanceDynamic* LightMID = UMaterialInstanceDynamic::Create(LightMat, Comp);
         LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), ModuleData.EmissiveIntensity);
         LightMID->SetVectorParameterValue(TEXT("Emissive Color"), ModuleData.EmissiveColor);
+        LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(ModuleData.U));
+        LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(ModuleData.V));
         Comp->SetMaterial(1, LightMID);
         ModuleData.LightMID = LightMID;
     }

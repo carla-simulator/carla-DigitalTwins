@@ -1,6 +1,6 @@
 #include "TrafficLights/Widgets/STrafficLightToolWidget.h"
-#include "TrafficLights/ModuleMeshFactory.h"
 #include "TrafficLights/MaterialFactory.h"
+#include "TrafficLights/ModuleMeshFactory.h"
 #include "Containers/UnrealString.h"
 #include "Misc/AssertionMacros.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -197,12 +197,44 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
 
                         Mod.LightType = static_cast<ETLLightType>(Choice);
 
+                        if (PreviewViewport->LightTypesTable)
+                        {
+                            static const UEnum* EnumPtr = StaticEnum<ETLLightType>();
+                            const FString EnumKey = EnumPtr->GetNameStringByValue( (int64)Mod.LightType );
+                            const FName   RowName(*EnumKey);
+
+                            if (const FLightTypeRow* Row = PreviewViewport->LightTypesTable->FindRow<FLightTypeRow>(RowName, TEXT("Lookup LightType")))
+                            {
+                                Mod.U = Row->AtlasCoords.X;
+                                Mod.V = Row->AtlasCoords.Y;
+                                Mod.EmissiveColor   = Row->Color;
+
+                                if (Mod.LightMID)
+                                {
+                                    Mod.LightMID->SetVectorParameterValue(
+                                        TEXT("Emissive Color"),
+                                        Mod.EmissiveColor
+                                    );
+                                }
+                            }
+                            else
+                            {
+                                UE_LOG(LogTemp, Warning,
+                                    TEXT("LightTypesTable: row not found '%s'"), *RowName.ToString());
+                            }
+                        }
+
                         UStaticMeshComponent* Comp = Mod.ModuleMeshComponent;
                         if (Comp)
                         {
-                            if (UMaterialInterface* NewLightMat = FMaterialFactory::GetLightMaterial(Mod.LightType))
+                            if (UMaterialInstanceDynamic* LightMID = FMaterialFactory::GetLightMaterialInstance(Comp))
                             {
-                                Comp->SetMaterial(1, NewLightMat);
+                                LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Mod.EmissiveIntensity);
+                                LightMID->SetVectorParameterValue(TEXT("Emissive Color"), Mod.EmissiveColor);
+                                LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(Mod.U));
+                                LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(Mod.V));
+                                Comp->SetMaterial(1, LightMID);
+                                Mod.LightMID = LightMID;
                             }
                         }
 
@@ -282,7 +314,11 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                         Mod.EmissiveColor = NewColor;
                         if (Mod.LightMID)
                         {
-                        Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                            Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                        }
+                        else
+                        {
+                            UE_LOG(LogTemp, Warning, TEXT("Module %d of Head %d has no Material Instance."), ModuleIndex, HeadIndex);
                         }
                         PreviewViewport->Rebuild(Heads);
                     })
@@ -810,13 +846,11 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 Index)
 
                     if (bNowHas)
                     {
-                        // Spawnea el cubo de backplate
-                        PreviewViewport->AddBackplateMesh(Index);
+                        //PreviewViewport->AddBackplateMesh(Index);
                     }
                     else
                     {
-                        // Destruye el cubo de backplate
-                        PreviewViewport->RemoveBackplateMesh(Index);
+                        //PreviewViewport->RemoveBackplateMesh(Index);
                     }
                 })
                 [
