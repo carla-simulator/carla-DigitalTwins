@@ -9,8 +9,12 @@
 #include "GeneralProjectSettings.h"
 #include "Misc/Paths.h"
 #include "AssetToolsModule.h"
+#include "Engine/AssetManager.h"
 #include "IAssetTools.h"
+#include "ObjectTools.h"
+#include "UObject/UObjectGlobals.h"
 #include "EditorAssetLibrary.h"
+
 
 UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FString PluginName)
 {
@@ -50,6 +54,26 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
   if (!UEditorAssetLibrary::SaveAsset(DuplicatedPath, false))
   {
     UE_LOG(LogTemp, Warning, TEXT("Duplicated asset created but not saved: %s"), *DuplicatedPath);
+  }
+
+  TArray<UObject*> SubObjects;
+  FReferenceFinder ReferenceCollector(SubObjects, nullptr, false, true, true);
+  ReferenceCollector.FindReferences(DuplicatedAsset);
+
+  // Log what we found:
+  for (UObject* RefObj : SubObjects)
+  {
+    if (RefObj)
+    {
+      FString RefObjPath = RefObj->GetPathName();
+      FString TargetRefObjPath = TEXT("/" + PluginName) / RefObj->GetName();
+
+      UE_LOG(LogTemp, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
+      if (!UEditorAssetLibrary::DoesAssetExist(TargetRefObjPath) && RefObjPath.Contains(TEXT("/CarlaDigitalTwinsTool")))
+      {
+        UObject* DuplicatedAsset = AssetToolsModule.Get().DuplicateAsset(*RefObj->GetName(), DestinationPath, RefObj);
+      }
+    }
   }
 
   return DuplicatedAsset;
