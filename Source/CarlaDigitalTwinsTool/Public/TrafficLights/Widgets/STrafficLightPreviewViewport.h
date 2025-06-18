@@ -14,7 +14,7 @@
 #include "Widgets/SViewport.h"
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
-#include "TrafficLights/LightTypeDataTable.h"
+#include "TrafficLights/TLLightTypeDataTable.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 

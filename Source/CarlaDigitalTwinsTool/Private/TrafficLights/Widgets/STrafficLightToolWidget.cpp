@@ -203,7 +203,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                             const FString EnumKey = EnumPtr->GetNameStringByValue( (int64)Mod.LightType );
                             const FName   RowName(*EnumKey);
 
-                            if (const FLightTypeRow* Row = PreviewViewport->LightTypesTable->FindRow<FLightTypeRow>(RowName, TEXT("Lookup LightType")))
+                            if (const FTLLightTypeRow* Row = PreviewViewport->LightTypesTable->FindRow<FTLLightTypeRow>(RowName, TEXT("Lookup LightType")))
                             {
                                 Mod.U = Row->AtlasCoords.X;
                                 Mod.V = Row->AtlasCoords.Y;

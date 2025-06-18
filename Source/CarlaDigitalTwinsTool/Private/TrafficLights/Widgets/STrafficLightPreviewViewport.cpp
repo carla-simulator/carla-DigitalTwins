@@ -5,7 +5,7 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TrafficLights/TLHead.h"
-#include "TrafficLights/LightTypeDataTable.h"
+#include "TrafficLights/TLLightTypeDataTable.h"
 #include "UObject/UObjectGlobals.h"
 
 
@@ -84,7 +84,7 @@ FVector2D STrafficLightPreviewViewport::GetAtlasCoordsForLightType(ETLLightType 
     const FString EnumName = EnumPtr->GetNameStringByValue(static_cast<int64>(LightType));
     const FName   RowName(*EnumName);
 
-    if (const FLightTypeRow* Row = LightTypesTable->FindRow<FLightTypeRow>(
+    if (const FTLLightTypeRow* Row = LightTypesTable->FindRow<FTLLightTypeRow>(
             RowName, TEXT("GetAtlasCoordsForLightType")))
     {
         return Row->AtlasCoords;

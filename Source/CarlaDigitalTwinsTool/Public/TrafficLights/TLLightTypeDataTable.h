@@ -8,10 +8,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "LightTypeDataTable.generated.h"
+#include "TLLightTypeDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FLightTypeRow : public FTableRowBase
+struct FTLLightTypeRow : public FTableRowBase
 {
   GENERATED_BODY()
 
