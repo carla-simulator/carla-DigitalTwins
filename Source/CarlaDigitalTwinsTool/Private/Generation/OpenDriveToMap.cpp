@@ -474,8 +474,14 @@ void UOpenDriveToMap::GenerateTile(){
 #endif
       MinPosition = FVector(CurrentTilesInXY.X * TileSize, CurrentTilesInXY.Y * -TileSize, 0.0f);
       MaxPosition = FVector((CurrentTilesInXY.X + 1.0f ) * TileSize, (CurrentTilesInXY.Y + 1.0f) * -TileSize, 0.0f);
+      
+      WorldOriginPosition = FVector(0,0,0);
+      WorldEndPosition = FVector(UMapGenFunctionLibrary::GetTransversemercProjection(
+        FinalGeoCoordinates.X, FinalGeoCoordinates.Y, 
+        OriginGeoCoordinates.X, OriginGeoCoordinates.Y), 0);
 
       GenerateAll(CarlaMap, MinPosition, MaxPosition);
+      
       Landscapes.Empty();
       bHasStarted = true;
       bRoadsFinished = true;
@@ -625,9 +631,27 @@ void UOpenDriveToMap::LoadMap()
       
     }
 #else
+
+    if( DefaultHeightmap )
+    {
+      FTexture2DMipMap& Mip = DefaultHeightmap->GetPlatformData()->Mips[0];
+
+      HeightmapWidth = Mip.SizeX;
+      HeightmapHeight = Mip.SizeY;
+
+      const uint16* RawData = static_cast<const uint16*>(Mip.BulkData.LockReadOnly());
+      int32 TotalPixels = HeightmapWidth * HeightmapHeight;
+
+      HeightmapPixels.SetNumUninitialized(TotalPixels);
+      FMemory::Memcpy(HeightmapPixels.GetData(), RawData, TotalPixels * sizeof(uint16));
+
+      Mip.BulkData.Unlock();
+    }
+
     do{
       GenerateTileStandalone();
     }while(GoNextTile());
+
     RemoveFromRoot();
     UWorld* World = GEditor->GetEditorWorldContext().World();
     if (World)
@@ -987,59 +1011,40 @@ void UOpenDriveToMap::GenerateTreePositions( const boost::optional<carla::road::
 }
 
 float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
-  if( DefaultHeightmap ){
-#if ENGINE_MAJOR_VERSION < 5
-      auto RawImageData = DefaultHeightmap->PlatformData->Mips[0].BulkData.LockReadOnly();
-#else
-      auto RawImageData = DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.LockReadOnly();
-#endif
-    const FColor* FormatedImageData = static_cast<const FColor*>(RawImageData);
-
+  if (DefaultHeightmap && HeightmapPixels.Num() > 0)
+  {
+    // Get Texture size and world coordinates
     int32 TextureSizeX = DefaultHeightmap->GetSizeX();
     int32 TextureSizeY = DefaultHeightmap->GetSizeY();
 
-    int32 PixelX = ( ( PosX - WorldOriginPosition.X/100) / (WorldEndPosition.X/100 - WorldOriginPosition.X/100) ) * ((float)TextureSizeX);
-    int32 PixelY = ( ( PosY - WorldOriginPosition.Y/100) / (WorldEndPosition.Y/100 - WorldOriginPosition.Y/100) ) * ((float)TextureSizeY);
+    // World coordinates are in centimeters, so we need to convert them to meters
+    float NormalizedX = (PosX - WorldOriginPosition.X) / (WorldEndPosition.X - WorldOriginPosition.X) * 100.0f;
+    float NormalizedY = (PosY - WorldOriginPosition.Y) / (WorldEndPosition.Y - WorldOriginPosition.Y) * 100.0f;
 
-    if( PixelX < 0 ){
-      PixelX += TextureSizeX;
+    NormalizedX = FMath::Clamp(NormalizedX, 0.0f, 1.0f);
+    NormalizedY = FMath::Clamp(NormalizedY, 0.0f, 1.0f);
+
+    int32 PixelX = FMath::Clamp(FMath::FloorToInt(NormalizedX * TextureSizeX), 0, TextureSizeX - 1);
+    int32 PixelY = FMath::Clamp(FMath::FloorToInt(NormalizedY * TextureSizeY), 0, TextureSizeY - 1);
+
+    int32 Index = PixelY * TextureSizeX + PixelX;
+
+    uint16 PixelValue = HeightmapPixels.IsValidIndex(Index) ? HeightmapPixels[Index] : 0;
+    float NormalizedPixelValue = static_cast<float>(PixelValue) / 65535.0f;
+
+    float LandscapeHeight = NormalizedPixelValue * (MaxHeight - MinHeight) + MinHeight;
+
+    if (bDrivingLane)
+    {
+        return LandscapeHeight - carla::geom::deformation::GetBumpDeformation(PosX, PosY);
     }
-
-    if( PixelY < 0 ){
-      PixelY += TextureSizeY;
+    else
+    {
+        return LandscapeHeight;
     }
-
-    if( PixelX > TextureSizeX ){
-      PixelX -= TextureSizeX;
-    }
-
-    if( PixelY > TextureSizeY ){
-      PixelY -= TextureSizeY;
-    }
-
-    FColor PixelColor = FormatedImageData[PixelY * TextureSizeX + PixelX];
-
-    //UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("PosX %f PosY %f "), PosX, PosY );
-    //UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("WorldOriginPosition %s "), *WorldOriginPosition.ToString() );
-    //UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("WorldEndPosition %s "), *WorldEndPosition.ToString() );
-    //UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("PixelColor %s "), *WorldEndPosition.ToString() );
-    //UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Reading Pixel X: %d Y %d Total Size X %d Y %d"), PixelX, PixelY, TextureSizeX, TextureSizeY );
-
-#if ENGINE_MAJOR_VERSION < 5
-    DefaultHeightmap->PlatformData->Mips[0].BulkData.Unlock();
-#else
-    DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.Unlock();
-#endif
-
-    float LandscapeHeight = ( (PixelColor.R/255.0f ) * ( MaxHeight - MinHeight ) ) + MinHeight;
-
-    if( bDrivingLane ){
-      return LandscapeHeight -
-        carla::geom::deformation::GetBumpDeformation(PosX,PosY);
-    }else{
-      return LandscapeHeight;
-    }
-  }else{
+  }
+  else
+  {
     if( bDrivingLane ){
       return carla::geom::deformation::GetZPosInDeformation(PosX, PosY) +
         (carla::geom::deformation::GetZPosInDeformation(PosX, PosY) * -0.3f) -

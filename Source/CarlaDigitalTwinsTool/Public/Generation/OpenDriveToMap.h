@@ -11,6 +11,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Generation/OpenDriveFileGenerationParameters.h"
 #include <Carla/Road/RoadMap.h>
+#include "TextureResource.h"
 #include <boost/optional.hpp>
 
 #include "OpenDriveToMap.generated.h"
@@ -253,4 +254,8 @@ private:
   UPROPERTY()
   UTexture2D* Heightmap;
 
+
+  TArray<uint16> HeightmapPixels;
+  int32 HeightmapWidth = 0;
+  int32 HeightmapHeight = 0;
 };
