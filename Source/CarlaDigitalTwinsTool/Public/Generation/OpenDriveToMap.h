@@ -113,6 +113,9 @@ public:
   FString LocalFilePath;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+  FVector2D FinalGeoCoordinates;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D OriginGeoCoordinates;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
@@ -200,6 +203,8 @@ protected:
   UFUNCTION( BlueprintImplementableEvent )
   void DownloadFinished();
 
+  UFUNCTION( BlueprintImplementableEvent )
+  void InitializeBuildingsInBP();
 
   UFUNCTION( BlueprintImplementableEvent )
   void ExecuteTileCommandlet();
