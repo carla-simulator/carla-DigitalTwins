@@ -33,8 +33,11 @@ public:
     virtual ~STrafficLightPreviewViewport();
 
 public:
-    UPROPERTY(EditAnywhere, Category="Data Table")
+    UPROPERTY(EditAnywhere, Category="Light Type Data Table")
     UDataTable* LightTypesTable {nullptr};
+
+    UPROPERTY(EditAnywhere, Category="Modules Data Table")
+    UDataTable* MoudlesTable {nullptr};
 
     /** Head */
 public:
@@ -51,6 +54,7 @@ public:
 
 private:
     void LoadLightTypeDataTable();
+    void LoadModulesDataTable();
     FVector2D GetAtlasCoordsForLightType(ETLLightType LightType) const;
 
 private:

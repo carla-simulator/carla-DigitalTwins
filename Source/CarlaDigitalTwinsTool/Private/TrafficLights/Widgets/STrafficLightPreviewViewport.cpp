@@ -12,6 +12,7 @@
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 {
     LoadLightTypeDataTable();
+    LoadModulesDataTable();
 
     PreviewScene = MakeUnique<FPreviewScene>(FPreviewScene::ConstructionValues());
 
@@ -49,6 +50,21 @@ void STrafficLightPreviewViewport::LoadLightTypeDataTable()
         );
     }
     if (LightTypesTable == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load LightTypes data table"));
+    }
+}
+
+void STrafficLightPreviewViewport::LoadModulesDataTable()
+{
+    if (MoudlesTable == nullptr)
+    {
+        MoudlesTable = LoadObject<UDataTable>(
+            nullptr,
+            TEXT("/Game/Carla/DataTables/Modules.Modules")
+        );
+    }
+    if (MoudlesTable == nullptr)
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to load LightTypes data table"));
     }
@@ -136,6 +152,10 @@ void STrafficLightPreviewViewport::ClearModuleMeshes()
         if (Comp)
         {
             PreviewScene->RemoveComponent(Comp);
+            if (Comp->IsRegistered())
+            {
+                Comp->UnregisterComponent();
+            }
             Comp->DestroyComponent();
         }
     }
