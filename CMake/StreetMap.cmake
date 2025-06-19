@@ -8,7 +8,7 @@ set (STREETMAP_URL https://github.com/carla-simulator/StreetMap.git)
 if (NOT IS_DIRECTORY "${STREETMAP_DIR}")
     execute_process (
         COMMAND
-            git -C ${STREETMAP_DIR} clone -b ${STREETMAP_BRANCH} ${STREETMAP_URL} .
+            git -C ${PLUGINS_DIR} clone -b ${STREETMAP_BRANCH} ${STREETMAP_URL} StreetMap
         RESULT_VARIABLE
             STREETMAP_RESULT
     )
