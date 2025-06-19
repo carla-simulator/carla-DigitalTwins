@@ -33,7 +33,7 @@ if not exist "%DIGITAL_TWINS_TOOL_PLUGINS_STREETMAP%\" (
 
 cd /d "%DIGITAL_TWINS_TOOL_PLUGINS_STREETMAP%"
 git fetch
-git checkout %CURRENT_STREETMAP_COMMIT%
+git switch marcel/ue5-fixes
 
 :: ============================================================================
 :: -- Digital TwinsContent-----------------------------------------------------
@@ -78,7 +78,7 @@ cmake ^
     -S %SOURCE_PATH% ^
     -B %SOURCE_PATH%/Build ^
     -G Ninja ^
-    --toolchain %SOURCE_PATH%/CMake/ToolchainUE%UE_VERSION%.cmake ^
+    --toolchain %SOURCE_PATH%/CMake/ToolchainUE5.cmake ^
     -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
     -DBUILD_SHARED_LIBS=OFF ^
     -DBOOST_COMPONENTS=%BOOST_COMPONENTS%

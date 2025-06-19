@@ -12,7 +12,10 @@
 
 #include <OSM2ODR.h>
 
-void UCustomFileDownloader::ConvertOSMInOpenDrive(FString FilePath, float Lat_0, float Lon_0)
+void UCustomFileDownloader::ConvertOSMInOpenDrive(
+    FString FilePath,
+    float Lat_0,
+    float Lon_0)
 {
   IPlatformFile &FileManager = FPlatformFileManager::Get().GetPlatformFile();
 

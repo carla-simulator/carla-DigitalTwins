@@ -163,7 +163,7 @@ FString LaneTypeToFString(carla::road::Lane::LaneType LaneType)
 void UOpenDriveToMap::ConvertOSMInOpenDrive()
 {
   FilePath = UGenerationPathsHelper::GetRawMapDirectoryPath(MapName) + "OpenDrive/" + MapName + ".osm";
-  FileDownloader->ConvertOSMInOpenDrive( FilePath , OriginGeoCoordinates.X, OriginGeoCoordinates.Y, OpenDriveGenParams);
+  FileDownloader->ConvertOSMInOpenDrive(FilePath, OriginGeoCoordinates.X, OriginGeoCoordinates.Y);
   FilePath.RemoveFromEnd(".osm", ESearchCase::Type::IgnoreCase);
   FilePath += ".xodr";
 
