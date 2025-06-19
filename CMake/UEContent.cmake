@@ -2,13 +2,14 @@ cmake_path (GET CMAKE_CURRENT_LIST_DIR PARENT_PATH DIGITALTWINS_DIR)
 
 set (CONTENT_DIR ${DIGITALTWINS_DIR}/Content/digitaltwins)
 set (CONTENT_URL https://bitbucket.org/carla-simulator/digitaltwins.git)
+set (CONTENT_BRANCH ue5-digitaltwins)
 message (STATUS "CONTENT_DIR=${CONTENT_DIR}")
 
 if (NOT IS_DIRECTORY "${CONTENT_DIR}")
     file (MAKE_DIRECTORY "${CONTENT_DIR}")
     execute_process (
         COMMAND
-            git -C ${CONTENT_DIR} clone ${CONTENT_URL} .
+            git -C ${CONTENT_DIR} clone -b ${CONTENT_BRANCH} ${CONTENT_URL} .
         RESULT_VARIABLE
             CONTENT_RESULT
     )

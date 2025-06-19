@@ -119,8 +119,7 @@ find_package (
   REQUIRED
 )
 
-# This is incorrect:
-set (SUMO_BRANCH marcel/carla-staging)
+set (SUMO_BRANCH master)
 message (STATUS "Looking for SUMO")
 find_package (
   SUMO
