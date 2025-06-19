@@ -14,7 +14,7 @@
 #include "ObjectTools.h"
 #include "UObject/UObjectGlobals.h"
 #include "EditorAssetLibrary.h"
-
+#include "FileHelpers.h"
 
 UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FString PluginName)
 {
@@ -60,21 +60,56 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
   FReferenceFinder ReferenceCollector(SubObjects, nullptr, false, true, true);
   ReferenceCollector.FindReferences(DuplicatedAsset);
 
-  // Log what we found:
+  TMap<UObject*, UObject*> ReplacementMap;
+  TSet<UObject*> ObjectsToReplaceWithin;
+  ObjectsToReplaceWithin.Add(DuplicatedAsset);
+
   for (UObject* RefObj : SubObjects)
   {
     if (RefObj)
     {
       FString RefObjPath = RefObj->GetPathName();
-      FString TargetRefObjPath = TEXT("/" + PluginName) / RefObj->GetName();
+      FString TargetRefObjPath = TEXT("/") + PluginName / RefObj->GetName();
 
       UE_LOG(LogTemp, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
+
+      UObject* LoadedDuplicatedRefObject = nullptr;
+
       if (!UEditorAssetLibrary::DoesAssetExist(TargetRefObjPath) && RefObjPath.Contains(TEXT("/CarlaDigitalTwinsTool")))
       {
-        UObject* DuplicatedAsset = AssetToolsModule.Get().DuplicateAsset(*RefObj->GetName(), DestinationPath, RefObj);
+        // Duplicate the asset if it doesn't exist yet
+        AssetToolsModule.Get().DuplicateAsset(*RefObj->GetName(), DestinationPath, RefObj);
+      }
+
+      // Try to load the duplicated or existing target asset
+      LoadedDuplicatedRefObject = UEditorAssetLibrary::LoadAsset(TargetRefObjPath);
+
+      if (LoadedDuplicatedRefObject)
+      {
+        UE_LOG(LogTemp, Log, TEXT("Replacement Map: %s -> %s"), *RefObjPath, *LoadedDuplicatedRefObject->GetPathName());
+        ReplacementMap.Add(RefObj, LoadedDuplicatedRefObject);
+        ObjectsToReplaceWithin.Add(LoadedDuplicatedRefObject);
+      }
+      else
+      {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load duplicated or existing asset: %s"), *TargetRefObjPath);
       }
     }
   }
+
+  // Rereference Assets
+  for (const auto& Pair : ReplacementMap)
+  {
+    UObject* Original = Pair.Key;
+    UObject* Replacement = Pair.Value;
+
+    TArray<UObject*> ObjectsToReplace = {Original};
+    ObjectTools::ForceReplaceReferences(Replacement, ObjectsToReplace, ObjectsToReplaceWithin);
+  }
+
+  //save all packages
+  UE_LOG(LogTemp, Log, TEXT("Saving modified plugin assets..."));
+  UEditorLoadingAndSavingUtils::SaveDirtyPackages(true, true);
 
   return DuplicatedAsset;
 
@@ -83,4 +118,3 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
 #endif
 }
 
-// /TestMap03/Static/DrivingLane/SM_DrivingLaneMesh9_X_0_Y_0.SM_DrivingLaneMesh9_X_0_Y_0

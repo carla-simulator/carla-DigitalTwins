@@ -55,6 +55,7 @@
 #include "Carla/Geom/Simplification.h"
 #include "Carla/Geom/Deformation.h"
 #include "Generation/MapGenFunctionLibrary.h"
+#include "BlueprintUtil/BlueprintUtilFunctions.h"
 #include "Carla/OpenDrive/OpenDriveParser.h"
 #include "Carla/RPC/String.h"
 
@@ -670,9 +671,13 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
 
       if(PairMap.first == carla::road::Lane::LaneType::Driving)
       {
-        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultRoadMaterial, MapName, "DrivingLane", FName(TEXT("SM_DrivingLaneMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultRoadMaterial, MapName);
+        UMaterialInstance* DuplicatedRoadMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedRoadMaterial, MapName, "DrivingLane", FName(TEXT("SM_DrivingLaneMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
         StaticMeshComponent->SetStaticMesh(MeshToSet);
       }
+
       TempActor->SetActorLocation(MeshCentroid * 100);
       TempActor->Tags.Add(FName("RoadLane"));
       // ActorMeshList.Add(TempActor);
