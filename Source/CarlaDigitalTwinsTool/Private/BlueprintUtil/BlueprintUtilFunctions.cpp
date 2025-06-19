@@ -24,11 +24,19 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
   }
 
   FString SourcePath = SourceObject->GetPathName();
-  FString SourcePackagePath = FPackageName::ObjectPathToPackageName(SourcePath);
   FString SourceAssetName = SourceObject->GetName();
 
-  FString DestinationPath = FString::Printf(TEXT("/%s"), *PluginName);
-  FString TargetAssetPath = TEXT("/" + PluginName) / SourceAssetName;
+  FString RootPath = TEXT("/CarlaDigitalTwinsTool/");
+  int32 RootIndex = SourcePath.Find(RootPath);
+
+  FString SourceFolderPath = FPaths::GetPath(SourcePath);
+
+  FString RelativePath = SourceFolderPath.Mid(RootIndex + RootPath.Len());
+  FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
+  FString TargetAssetPath = DestinationPath + "/" + SourceAssetName;
+
+  UE_LOG(LogTemp, Warning, TEXT("DestinationPath: %s"), *DestinationPath);
+  UE_LOG(LogTemp, Warning, TEXT("TargetAssetPath: %s"), *TargetAssetPath);
 
   if (UEditorAssetLibrary::DoesAssetExist(TargetAssetPath))
   {
@@ -39,7 +47,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     }
   }
 
-  // Duplicate asset
   FAssetToolsModule& AssetToolsModule = FAssetToolsModule::GetModule();
   UObject* DuplicatedAsset = AssetToolsModule.Get().DuplicateAsset(SourceAssetName, DestinationPath, SourceObject);
 
@@ -49,16 +56,37 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     return nullptr;
   }
 
-  // Save the asset
   FString DuplicatedPath = DuplicatedAsset->GetPathName();
   if (!UEditorAssetLibrary::SaveAsset(DuplicatedPath, false))
   {
     UE_LOG(LogTemp, Warning, TEXT("Duplicated asset created but not saved: %s"), *DuplicatedPath);
   }
 
-  TArray<UObject*> SubObjects;
-  FReferenceFinder ReferenceCollector(SubObjects, nullptr, false, true, true);
-  ReferenceCollector.FindReferences(DuplicatedAsset);
+  TSet<UObject*> SubObjects;
+  TQueue<UObject*> Pending;
+  Pending.Enqueue(DuplicatedAsset);
+
+  while (!Pending.IsEmpty())
+  {
+    UObject* CurrentObject = nullptr;
+    Pending.Dequeue(CurrentObject);
+
+    if(!CurrentObject|| SubObjects.Contains(CurrentObject)) continue;
+
+    SubObjects.Add(CurrentObject);
+
+    TArray<UObject*> FoundRefs;
+    FReferenceFinder ReferenceCollector(FoundRefs, nullptr, false, true, true);
+    ReferenceCollector.FindReferences(CurrentObject);
+
+    for (UObject* Ref : FoundRefs)
+    {
+      if (Ref && !SubObjects.Contains(Ref) && Ref->IsAsset())
+      {
+        Pending.Enqueue(Ref);
+      }
+    }
+  }
 
   TMap<UObject*, UObject*> ReplacementMap;
   TSet<UObject*> ObjectsToReplaceWithin;
@@ -69,7 +97,14 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     if (RefObj)
     {
       FString RefObjPath = RefObj->GetPathName();
-      FString TargetRefObjPath = TEXT("/") + PluginName / RefObj->GetName();
+      FString RootPath = TEXT("/CarlaDigitalTwinsTool/");
+      int32 RootIndex = RefObjPath.Find(RootPath);
+
+      FString SourceFolderPath = FPaths::GetPath(RefObjPath);
+      FString RelativePath = SourceFolderPath.Mid(RootIndex + RootPath.Len());
+
+      FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
+      FString TargetRefObjPath = DestinationPath + "/" + RefObj->GetName();
 
       UE_LOG(LogTemp, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
 
@@ -77,11 +112,9 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
 
       if (!UEditorAssetLibrary::DoesAssetExist(TargetRefObjPath) && RefObjPath.Contains(TEXT("/CarlaDigitalTwinsTool")))
       {
-        // Duplicate the asset if it doesn't exist yet
         AssetToolsModule.Get().DuplicateAsset(*RefObj->GetName(), DestinationPath, RefObj);
       }
 
-      // Try to load the duplicated or existing target asset
       LoadedDuplicatedRefObject = UEditorAssetLibrary::LoadAsset(TargetRefObjPath);
 
       if (LoadedDuplicatedRefObject)
@@ -97,7 +130,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     }
   }
 
-  // Rereference Assets
   for (const auto& Pair : ReplacementMap)
   {
     UObject* Original = Pair.Key;
@@ -107,7 +139,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     ObjectTools::ForceReplaceReferences(Replacement, ObjectsToReplace, ObjectsToReplaceWithin);
   }
 
-  //save all packages
   UE_LOG(LogTemp, Log, TEXT("Saving modified plugin assets..."));
   UEditorLoadingAndSavingUtils::SaveDirtyPackages(true, true);
 
@@ -117,4 +148,3 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
   return nullptr;
 #endif
 }
-
