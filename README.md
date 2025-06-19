@@ -89,12 +89,10 @@ Make sure the **Digital Twins plugin** is correctly installed and built in your 
 
     <img width="239" alt="CarlaDigitalTwinsContent" src="https://github.com/user-attachments/assets/c401ed92-fac0-4c31-94d0-9212ae742e27" />
 
-4. Navigate to the plugin content folder:
-
-5. Inside that folder, locate the file named:  
+4. Inside that folder, locate the file named:  
    **`UW_DigitalTwins`**
 
-6. **Right-click** on `UW_DigitalTwins` and select:
+5. **Right-click** on `UW_DigitalTwins` and select:
 
    ```
    Run Editor Utility Widget
@@ -106,44 +104,44 @@ Make sure the **Digital Twins plugin** is correctly installed and built in your 
 
 ## Importing a Real Map from OpenStreetMap
 
-7. Once the tool launches, a UI will appear with **three sections**:
+6. Once the tool launches, a UI will appear with **three sections**:
 
    - **Filename** – your custom name for the map
    - **OSM URL** – the URL from OpenStreetMap
    - **LocalFilePath** – optional local saving path
 
-8. Go to [https://www.openstreetmap.org](https://www.openstreetmap.org).
+7. Go to [https://www.openstreetmap.org](https://www.openstreetmap.org).
 
-9. Search and zoom into the **area** you want to replicate.
+8. Search and zoom into the **area** you want to replicate.
 
-10. Click the **Export** button on the top menu, the one in the upper part of the window which is between other buttons as shown in the following screenshot:
+9. Click the **Export** button on the top menu, the one in the upper part of the window which is between other buttons as shown in the following screenshot:
    
 ![image](https://github.com/user-attachments/assets/e6bbc00b-b30c-48f8-80ab-34a6419b3555)
 
 
-11. On the left side of the window screen, find the text:
+10. On the left side of the window screen, find the text:
     **“Overpass API”**  
     Right-click the link and select **“Copy link address”**.
 
     ![image](https://github.com/user-attachments/assets/a51d849a-55e3-49ca-95c8-d96c75692e9d)
 
 
-12. Go back to the Digital Twins tool in Unreal:
+11. Go back to the Digital Twins tool in Unreal:
 
     - Paste the copied URL into the **OSMURL** field.
     - Enter a desired name into the **Filename** field.
 
-13. Click the **Generate** button.
+12. Click the **Generate** button.
 
 ---
 
 ## Generation and Preview
 
-14. Unreal Engine might seem frozen — **don't worry**, it's processing the data.
+13. Unreal Engine might seem frozen — **don't worry**, it's processing the data.
 
     - You can check the progress in the **Output Log**.
 
-15. Once the generation is complete, click **Play** to explore your generated digital twin of the map inside the Unreal environment.
+14. Once the generation is complete, click **Play** to explore your generated digital twin of the map inside the Unreal environment.
 
 ---
 
