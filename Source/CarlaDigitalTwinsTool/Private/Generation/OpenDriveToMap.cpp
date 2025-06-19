@@ -282,7 +282,11 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
   MeshData.Triangles = Triangles;
   MeshData.Normals = Normals;
   MeshData.UV0 = UVs;
-  UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultLandscapeMaterial, MapName, "Terrain", FName(TEXT("SM_LandscapeMesh" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() )));
+    
+  UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultLandscapeMaterial, MapName);
+  UMaterialInstance* DuplicatedLandscapeMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+  UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedLandscapeMaterial, MapName, "Terrain", FName(TEXT("SM_LandscapeMesh" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() )));
   Mesh->SetStaticMesh(MeshToSet);
   MeshActor->SetActorLabel("SM_LandscapeActor" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() );
   MeshActor->Tags.Add(FName("LandscapeToMove"));
@@ -627,13 +631,19 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
 
       if(DefaultRoadMaterial && PairMap.first == carla::road::Lane::LaneType::Driving)
       {
-        StaticMeshComponent->SetMaterial(0, DefaultRoadMaterial);
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultRoadMaterial, MapName);
+        UMaterialInstance* DuplicatedRoadMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+        StaticMeshComponent->SetMaterial(0, DuplicatedRoadMaterial);
         StaticMeshComponent->CastShadow = false;
         TempActor->SetActorLabel(FString("SM_DrivingLane_") + FString::FromInt(index));
       }
       if(DefaultSidewalksMaterial && PairMap.first == carla::road::Lane::LaneType::Sidewalk)
       {
-        StaticMeshComponent->SetMaterial(0, DefaultSidewalksMaterial);
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultSidewalksMaterial, MapName);
+        UMaterialInstance* DuplicatedSidewalkMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+        StaticMeshComponent->SetMaterial(0, DuplicatedSidewalkMaterial);
         TempActor->SetActorLabel(FString("SM_Sidewalk_") + FString::FromInt(index));
       }
       FVector MeshCentroid = FVector(0,0,0);
@@ -665,7 +675,10 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
 
       if(PairMap.first == carla::road::Lane::LaneType::Sidewalk)
       {
-        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultSidewalksMaterial, MapName, "DrivingLane", FName(TEXT("SM_SidewalkMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultSidewalksMaterial, MapName);
+        UMaterialInstance* DuplicatedSidewalkMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+        UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedSidewalkMaterial, MapName, "DrivingLane", FName(TEXT("SM_SidewalkMesh" + FString::FromInt(index) + GetStringForCurrentTile() )));
         StaticMeshComponent->SetStaticMesh(MeshToSet);
       }
 
@@ -757,11 +770,20 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
     StaticMeshComponent->CastShadow = false;
     if (lanemarkinfo[index].find("yellow") != std::string::npos) {
       if(DefaultLaneMarksYellowMaterial)
-        StaticMeshComponent->SetMaterial(0, DefaultLaneMarksYellowMaterial);
+      {
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultLaneMarksYellowMaterial, MapName);
+        UMaterialInstance* DuplicatedLaneMarksYellowMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+        StaticMeshComponent->SetMaterial(0, DuplicatedLaneMarksYellowMaterial);
+      }
     }else{
       if(DefaultLaneMarksWhiteMaterial)
-        StaticMeshComponent->SetMaterial(0, DefaultLaneMarksWhiteMaterial);
+      {
+        UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultLaneMarksWhiteMaterial, MapName);
+        UMaterialInstance* DuplicatedLaneMarksWhiteMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
 
+        StaticMeshComponent->SetMaterial(0, DuplicatedLaneMarksWhiteMaterial);
+      }
     }
 
     const FProceduralCustomMesh MeshData = *Mesh;
@@ -775,7 +797,10 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
       Tangents
     );
 
-    UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DefaultLandscapeMaterial, MapName, "LaneMark", FName(TEXT("SM_LaneMarkMesh" + FString::FromInt(meshindex) + GetStringForCurrentTile() )));
+    UObject* DuplicatedMaterialObject = UBlueprintUtilFunctions::CopyAssetToPlugin(DefaultLandscapeMaterial, MapName);
+    UMaterialInstance* DuplicatedLandscapeMaterial = Cast<UMaterialInstance>(DuplicatedMaterialObject);
+
+    UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedLandscapeMaterial, MapName, "LaneMark", FName(TEXT("SM_LaneMarkMesh" + FString::FromInt(meshindex) + GetStringForCurrentTile() )));
     StaticMeshComponent->SetStaticMesh(MeshToSet);
     TempActor->SetActorLocation(MeshCentroid * 100);
     TempActor->Tags.Add(*FString(lanemarkinfo[index].c_str()));
