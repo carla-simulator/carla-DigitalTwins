@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
-#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "CustomFileDownloader.generated.h"
 /**
  *

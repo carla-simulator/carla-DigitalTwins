@@ -9,7 +9,6 @@
 #include "EditorUtilityActor.h"
 #include "EditorUtilityObject.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
-#include "Generation/OpenDriveFileGenerationParameters.h"
 #include <Carla/Road/RoadMap.h>
 #include <boost/optional.hpp>
 
