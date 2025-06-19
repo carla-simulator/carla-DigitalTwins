@@ -82,11 +82,12 @@ Make sure the **Digital Twins plugin** is correctly installed and built in your 
 
 2. In the **Content Browser**, go to the bottom-right corner and click the **eye icon** to enable "Show Plugin Content".
 
-   📸 *[Insert Screenshot: Content Browser with eye icon highlighted]*
+    <img width="1022" alt="ContentBrowser" src="https://github.com/user-attachments/assets/acd1f2df-dac6-43ee-a1e4-904e26b9f4ee" />
+    <img width="173" alt="ShowPluginContent" src="https://github.com/user-attachments/assets/0cdfd612-2e91-412f-abd6-5509ae2e8b8f" />
 
 3. On the **left panel**, a new section will appear labeled `DigitalTwins Content`. Expand it.
 
-   📸 *[Insert Screenshot: Plugin Content section showing "DigitalTwins"]*
+    <img width="239" alt="CarlaDigitalTwinsContent" src="https://github.com/user-attachments/assets/c401ed92-fac0-4c31-94d0-9212ae742e27" />
 
 4. Navigate to the plugin content folder:
 
@@ -99,7 +100,7 @@ Make sure the **Digital Twins plugin** is correctly installed and built in your 
    Run Editor Utility Widget
    ```
 
-   📸 *[Insert Screenshot: Right-click on UW_DigitalTwins with "Run Editor Utility Widget" selected]*
+    <img width="290" alt="RunUtilityWidget" src="https://github.com/user-attachments/assets/1476d92e-0287-4ca7-b8b6-6bf817fef831" />
 
 ---
 
