@@ -133,9 +133,6 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultLandscapeMaterial;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
-  FOpenDriveFileGenerationParameters OpenDriveGenParams;
-
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceBetweenTrees = 50.0f;
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
