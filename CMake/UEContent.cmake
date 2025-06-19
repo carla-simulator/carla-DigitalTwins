@@ -1,6 +1,6 @@
 cmake_path (GET CMAKE_CURRENT_LIST_DIR PARENT_PATH DIGITALTWINS_DIR)
 
-set (CONTENT_DIR ${DIGITALTWINS_DIR}/Content/digitaltwins)
+set (CONTENT_DIR ${DIGITALTWINS_DIR}/Content)
 set (CONTENT_URL https://bitbucket.org/carla-simulator/digitaltwins.git)
 set (CONTENT_BRANCH ue5-digitaltwins)
 message (STATUS "CONTENT_DIR=${CONTENT_DIR}")
