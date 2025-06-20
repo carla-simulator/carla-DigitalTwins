@@ -1454,7 +1454,9 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto PixelData = MakeUnique<TImagePixelData<FColor>>(Shape);
     PixelData->Pixels = Pixels;
     ImageTask->PixelData = MoveTemp(PixelData);
-    ImageTask->Filename = "D:\\Feina\\Test.png";
+
+    FString ImagePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+    ImageTask->Filename = ImagePath;
     ImageTask->Format = EImageFormat::PNG;
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
     ImageTask->bOverwriteFile = true;
