@@ -9,14 +9,21 @@
 // Engine headers
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "MiscFunctionLibrary.generated.h"
+#include "BlueprintUtilFunctions.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogDigitalTwinsToolBlueprintUtil, Log, All);
 
 UCLASS(BlueprintType)
-class CARLADIGITALTWINSTOOL_API UMiscFunctionLibrary : public UBlueprintFunctionLibrary
+class CARLADIGITALTWINSTOOL_API UBlueprintUtilFunctions : public UBlueprintFunctionLibrary
 {
   GENERATED_BODY()
+
 public:
+
+  UFUNCTION(BlueprintPure)
+  static UObject* CopyAssetToPlugin(UObject* SourceObject, FString PluginName);
+
   UFUNCTION(BlueprintCallable)
   static FString GetProjectName();
+
 };
