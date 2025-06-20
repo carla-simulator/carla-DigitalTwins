@@ -1370,8 +1370,10 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
 
 UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 {
-    const auto Limit = 2000000.0F;
-    auto Bounds = FBox(-FVector(Limit), FVector(Limit));
+    const double Limit = 2000000.0;
+
+    auto Min = FVector(Limit);
+    auto Max = FVector (-Limit);
     TArray<AActor*> HiddenActors;
     {
         TSet<AActor*> MeshActorSet;
@@ -1389,7 +1391,9 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
                 auto SM = SMC->GetStaticMesh();
                 if (!SM)
                     continue;
-                Bounds = Bounds.Overlap(SM->GetBoundingBox());
+                auto BoundingBox = SM->GetBoundingBox();
+                Min = FVector::Min(Min, BoundingBox.Min);
+                Max = FVector::Max(Max, BoundingBox.Max);
                 MeshActorSet.Add(MeshActor);
             }
         }
@@ -1409,8 +1413,6 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         }
     }
 
-    auto Min = Bounds.Min;
-    auto Max = Bounds.Max;
     auto Center = (Max + Min) / 2.0F;
     auto Extent = (Max - Min) / 2.0F;
     auto OrthoWidth = std::max(Extent.X, Extent.Y) * 2.0F;
@@ -1420,7 +1422,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
-    RenderTarget->InitAutoFormat(Extent.X, Extent.Y);
+    RenderTarget->InitAutoFormat(1920, 1920);
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
