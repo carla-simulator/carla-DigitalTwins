@@ -1028,7 +1028,8 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
 #if ENGINE_MAJOR_VERSION < 5
     DefaultHeightmap->PlatformData->Mips[0].BulkData.Unlock();
 #else
-    DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.Unlock();
+    if (!DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.IsUnlocked())
+      DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.Unlock();
 #endif
 
     float LandscapeHeight = ( (PixelColor.R/255.0f ) * ( MaxHeight - MinHeight ) ) + MinHeight;
