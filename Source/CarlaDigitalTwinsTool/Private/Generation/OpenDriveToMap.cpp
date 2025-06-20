@@ -1446,14 +1446,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     Camera->SetActorRotation(Rotation);
 
     SCC2D->CaptureScene();
-    FlushRenderingCommands();
     TArray<FColor> Pixels;
-    ENQUEUE_RENDER_COMMAND(GetRoadRenderResult)([&](auto& RHICommandList)
-        {
-            auto Resource = RenderTarget->GetRenderTargetResource();
-            Resource->ReadPixels(Pixels);
-        });
-    FlushRenderingCommands();
+    RenderTarget->GetRenderTargetResource()->ReadPixels(Pixels);
 
     auto Shape = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
