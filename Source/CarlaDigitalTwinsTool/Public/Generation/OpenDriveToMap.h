@@ -19,6 +19,7 @@ class UProceduralMeshComponent;
 class UMeshComponent;
 class UCustomFileDownloader;
 class UMaterialInstance;
+
 /**
  *
  */
@@ -99,6 +100,9 @@ public:
   UFUNCTION(BlueprintCallable)
   void UnloadWorldPartitionRegion(const FBox& RegionBox);
 
+  UTexture2D* RenderRoadToTexture(UWorld* World);
+  UTexture2D* RenderRoadToTexture(FString MapPath);
+
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="File")
   FString FilePath;
 
@@ -134,6 +138,7 @@ public:
 
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceBetweenTrees = 50.0f;
+
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceFromRoadEdge = 3.0f;
 
