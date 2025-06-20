@@ -9,8 +9,6 @@
 #include "Camera/CameraComponent.h"
 #include "Generation/MapGenFunctionLibrary.h"
 
-DEFINE_LOG_CATEGORY(LogGoogleStreetView);
-
 void UGoogleStreetViewFetcher::Initialize(ACameraActor* InCameraActor, FVector2D InOriginGeoCoordinates, const FString& InGoogleAPIKey)
 {
     CameraActor = InCameraActor;
@@ -27,7 +25,7 @@ void UGoogleStreetViewFetcher::RequestGoogleStreetViewImage()
 {
     if (!CameraActor)
     {
-        UE_LOG(LogGoogleStreetView, Warning, TEXT("Camera actor is null."));
+        UE_LOG(LogTemp, Warning, TEXT("Camera actor is null."));
         return;
     }
 
@@ -40,13 +38,13 @@ void UGoogleStreetViewFetcher::RequestGoogleStreetViewImage()
     FVector2D latlon = UMapGenFunctionLibrary::InverseTransverseMercatorProjection( CameraLocation.X, CameraLocation.Y, OriginLat, OriginLon );
     double lat = latlon.X;
     double lon = latlon.Y;
-    int heading = static_cast<int>(FMath::Fmod(CameraRotation.Yaw + 90.0f + 360.0f, 360.0f));
+    int heading = static_cast<int>(FMath::Fmod(CameraRotation.Yaw + 360.0f, 360.0f));
 
     FString URL = FString::Printf(
         TEXT("https://maps.googleapis.com/maps/api/streetview?size=640x480&location=%.6f,%.6f&heading=%d&pitch=0&key=%s"),
         lat, lon, heading, *GoogleAPIKey);
 
-    UE_LOG(LogGoogleStreetView, Log, TEXT("Requesting Google Street View image from URL: %s"), *URL);
+    UE_LOG(LogTemp, Log, TEXT("Requesting Google Street View image from URL: %s"), *URL);
 
     FHttpModule* Http = &FHttpModule::Get();
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = Http->CreateRequest();
@@ -65,7 +63,7 @@ void UGoogleStreetViewFetcher::OnStreetViewResponseReceived(FHttpRequestPtr Requ
 
         if (Texture)
         {
-            UE_LOG(LogGoogleStreetView, Log, TEXT("Successfully created Google Street View texture."));
+            UE_LOG(LogTemp, Log, TEXT("Successfully created Google Street View texture."));
             StreetViewTexture = Texture;
 
             if (CameraActor)
@@ -73,17 +71,17 @@ void UGoogleStreetViewFetcher::OnStreetViewResponseReceived(FHttpRequestPtr Requ
                 ApplyCameraTexture();
             }
             else{
-                UE_LOG(LogGoogleStreetView, Error, TEXT("No Camera Actor available."));
+                UE_LOG(LogTemp, Error, TEXT("No Camera Actor available."));
             }
         }
         else
         {
-            UE_LOG(LogGoogleStreetView, Warning, TEXT("Failed to convert Google Street View image to texture."));
+            UE_LOG(LogTemp, Warning, TEXT("Failed to convert Google Street View image to texture."));
         }
     }
     else
     {
-        UE_LOG(LogGoogleStreetView, Error, TEXT("Failed to retrieve Google Street View image. HTTP code: %d"),
+        UE_LOG(LogTemp, Error, TEXT("Failed to retrieve Google Street View image. HTTP code: %d"),
             Response.IsValid() ? Response->GetResponseCode() : -1);
     }
 }
@@ -91,7 +89,7 @@ void UGoogleStreetViewFetcher::OnStreetViewResponseReceived(FHttpRequestPtr Requ
 void UGoogleStreetViewFetcher::ApplyCameraTexture()
 {
     // Create a dynamic material instance from the post process material
-    UMaterialInterface* BasePPMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/CarlaDigitalTwinsTool/Static/Utils/M_GoogleStreetViewPost.M_GoogleStreetViewPost"));
+    UMaterialInterface* BasePPMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/CarlaDigitalTwinsTool/digitalTwins/Static/Utils/M_GoogleStreetViewPost.M_GoogleStreetViewPost"));
 
     if (!StreetViewPostProcessMaterial && BasePPMat)
     {
@@ -104,7 +102,7 @@ void UGoogleStreetViewFetcher::ApplyCameraTexture()
         StreetViewPostProcessMaterial->SetTextureParameterValue("StreetViewTex", StreetViewTexture);
     }
     else{
-        UE_LOG(LogGoogleStreetView, Error, TEXT("No StreetViewTexture."));
+        UE_LOG(LogTemp, Error, TEXT("No StreetViewTexture."));
     }
 
     // Apply the post-process material to the camera
@@ -119,6 +117,6 @@ void UGoogleStreetViewFetcher::ApplyCameraTexture()
         Cam->PostProcessSettings.WeightedBlendables.Array.Add(Blendable);
     }
     else{
-        UE_LOG(LogGoogleStreetView, Error, TEXT("No camera actor or camera component."));
+        UE_LOG(LogTemp, Error, TEXT("No camera actor or camera component."));
     }
 }

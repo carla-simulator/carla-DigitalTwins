@@ -77,8 +77,6 @@ macro (GenerateFinalDumpFiles)
   )
 endmacro ()
 
-
-
 message (STATUS "Requesting boost components:")
 foreach (COMPONENT ${BOOST_COMPONENTS})
   message (STATUS " - ${COMPONENT}")
@@ -86,6 +84,9 @@ endforeach ()
 
 list (APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
+
+include (CMake/StreetMap.cmake)
+include (CMake/UEContent.cmake)
 
 set (BOOST_VERSION 1.84.0)
 message (STATUS "Looking for Boost")
@@ -102,7 +103,7 @@ find_package (
   REQUIRED
 )
 
-set (XERCESC_VERSION 3.2.3)
+set (XERCESC_VERSION 3.3.0)
 message (STATUS "Looking for XercesC")
 find_package (
   XercesC ${XERCESC_VERSION}
@@ -118,8 +119,7 @@ find_package (
   REQUIRED
 )
 
-# This is incorrect:
-set (SUMO_COMMIT 1da3c07e39f3e2e0d97f8f709a7255a0df8c6200)
+set (SUMO_BRANCH master)
 message (STATUS "Looking for SUMO")
 find_package (
   SUMO
