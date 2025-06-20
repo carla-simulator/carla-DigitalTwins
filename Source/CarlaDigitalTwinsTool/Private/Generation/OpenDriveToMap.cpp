@@ -1370,7 +1370,8 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
 
 UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 {
-    FBox Bounds;
+    const auto Limit = 2000000.0F;
+    auto Bounds = FBox(-FVector(Limit), FVector(Limit));
     TArray<AActor*> HiddenActors;
     {
         TSet<AActor*> MeshActorSet;
