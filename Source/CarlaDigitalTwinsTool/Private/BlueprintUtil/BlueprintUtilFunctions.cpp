@@ -102,13 +102,13 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     if (RefObj)
     {
       FString RefObjPath = RefObj->GetPathName();
-      FString RootPath = TEXT("/CarlaDigitalTwinsTool/");
-      int32 RootIndex = RefObjPath.Find(RootPath);
+      RootPath = TEXT("/CarlaDigitalTwinsTool/");
+      RootIndex = RefObjPath.Find(RootPath);
 
-      FString SourceFolderPath = FPaths::GetPath(RefObjPath);
-      FString RelativePath = SourceFolderPath.Mid(RootIndex + RootPath.Len());
+      SourceFolderPath = FPaths::GetPath(RefObjPath);
+      RelativePath = SourceFolderPath.Mid(RootIndex + RootPath.Len());
 
-      FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
+      DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
       FString TargetRefObjPath = DestinationPath + "/" + RefObj->GetName();
 
       UObject* LoadedDuplicatedRefObject = nullptr;
