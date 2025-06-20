@@ -57,4 +57,14 @@ public:
 
   UFUNCTION(BlueprintCallable)
   static UInstancedStaticMeshComponent* AddInstancedStaticMeshComponentToActor(AActor* TargetActor);
+
+  UFUNCTION(BlueprintCallable)
+  static void SmoothVerticesDeep(
+    TArray<FVector>& Vertices,
+    const TArray<int32>& Indices,
+    int Depth = 3,                 // Number of neighbor levels
+    int NumIterations = 1,
+    float SmoothingFactor = 1.0f   // Blend between original and averaged
+  );
+
 };

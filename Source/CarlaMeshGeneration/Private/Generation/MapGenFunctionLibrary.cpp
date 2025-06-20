@@ -306,3 +306,83 @@ UInstancedStaticMeshComponent* UMapGenFunctionLibrary::AddInstancedStaticMeshCom
 
   return ISMComponent;
 }
+
+void UMapGenFunctionLibrary::SmoothVerticesDeep(
+  TArray<FVector>& Vertices,
+  const TArray<int32>& Indices,
+  int Depth,                 // Number of neighbor levels
+  int NumIterations,
+  float SmoothingFactor   // Blend between original and averaged
+)
+{
+  const int32 NumVertices = Vertices.Num();
+
+  // Step 1: Build adjacency map
+  TMap<int32, TSet<int32>> VertexNeighbors;
+  const int32 NumTriangles = Indices.Num() / 3;
+
+  for (int32 i = 0; i < NumTriangles; ++i)
+  {
+      int32 I0 = Indices[i * 3 + 0];
+      int32 I1 = Indices[i * 3 + 1];
+      int32 I2 = Indices[i * 3 + 2];
+
+      VertexNeighbors.FindOrAdd(I0).Add(I1);
+      VertexNeighbors.FindOrAdd(I0).Add(I2);
+
+      VertexNeighbors.FindOrAdd(I1).Add(I0);
+      VertexNeighbors.FindOrAdd(I1).Add(I2);
+
+      VertexNeighbors.FindOrAdd(I2).Add(I0);
+      VertexNeighbors.FindOrAdd(I2).Add(I1);
+  }
+
+  // Step 2: Iterative smoothing
+  for (int32 Iter = 0; Iter < NumIterations; ++Iter)
+  {
+    TArray<FVector> NewVertices = Vertices;
+    for (int32 i = 0; i < NumVertices; ++i)
+    {
+        TSet<int32> Visited;
+        TQueue<TPair<int32, int32>> Queue; // Pair of (vertex index, current depth)
+        Visited.Add(i);
+        Queue.Enqueue(TPair<int32, int32>(i, 0));
+        TArray<int32> CollectedNeighbors;
+
+        while (!Queue.IsEmpty())
+        {
+          TPair<int32, int32> Current;
+          Queue.Dequeue(Current);
+          int32 CurrentIndex = Current.Key;
+          int32 CurrentDepth = Current.Value;
+
+          if (CurrentDepth >= Depth)
+              continue;
+          const TSet<int32>* Neighbors = VertexNeighbors.Find(CurrentIndex);
+          if (!Neighbors) continue;
+
+          for (int32 NeighborIndex : *Neighbors)
+          {
+            if (!Visited.Contains(NeighborIndex))
+            {
+              Visited.Add(NeighborIndex);
+              CollectedNeighbors.Add(NeighborIndex);
+              Queue.Enqueue(TPair<int32, int32>(NeighborIndex, CurrentDepth + 1));
+            }
+          }
+        }
+
+        if (CollectedNeighbors.Num() > 0)
+        {
+          FVector Average = FVector::ZeroVector;
+          for (int32 NeighborIdx : CollectedNeighbors)
+          {
+            Average += Vertices[NeighborIdx];
+          }
+          Average /= CollectedNeighbors.Num();
+          NewVertices[i] = FMath::Lerp(Vertices[i], Average, SmoothingFactor);
+        }
+    }
+    Vertices = NewVertices;
+  }
+}

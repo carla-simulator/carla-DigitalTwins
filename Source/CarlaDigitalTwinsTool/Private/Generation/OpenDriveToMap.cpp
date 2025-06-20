@@ -278,49 +278,44 @@ void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int Number
         Triangles.Add(i2);
       }
     }
-
   });
 
-  // Ahora en GameThread, procesar cada mesh para terminar y spawn actors
-  AsyncTask(ENamedThreads::GameThread, [this, AllMeshData = MoveTemp(AllMeshData)]() mutable
+  for (const FTerrainMeshData& MeshData : AllMeshData)
   {
-    for (const FTerrainMeshData& MeshData : AllMeshData)
-    {
-      TArray<FVector> Normals;
-      TArray<FProcMeshTangent> Tangents;
+    TArray<FVector> Normals;
+    TArray<FProcMeshTangent> Tangents;
 
-      UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UVs, Normals, Tangents);
+    UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UVs, Normals, Tangents);
 
-      FProceduralCustomMesh ProcMeshData;
-      ProcMeshData.Vertices = MeshData.Vertices;
-      ProcMeshData.Triangles = MeshData.Triangles;
-      ProcMeshData.Normals = Normals;
-      ProcMeshData.UV0 = MeshData.UVs;
+    FProceduralCustomMesh ProcMeshData;
+    ProcMeshData.Vertices = MeshData.Vertices;
+    ProcMeshData.Triangles = MeshData.Triangles;
+    ProcMeshData.Normals = Normals;
+    ProcMeshData.UV0 = MeshData.UVs;
 
-      UStaticMesh* StaticMesh = UMapGenFunctionLibrary::CreateMesh(ProcMeshData, Tangents, DefaultLandscapeMaterial, MapName, "Terrain", FName(*FString::Printf(TEXT("SM_LandscapeMesh_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile())));
+    UStaticMesh* StaticMesh = UMapGenFunctionLibrary::CreateMesh(ProcMeshData, Tangents, DefaultLandscapeMaterial, MapName, "Terrain", FName(*FString::Printf(TEXT("SM_LandscapeMesh_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile())));
 
-      if (!StaticMesh) continue;
+    if (!StaticMesh) continue;
 
-      UWorld* World = GetEditorWorld();
+    UWorld* World = GetEditorWorld();
 
-      if (!World) continue;
+    if (!World) continue;
 
-      AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(MeshData.Offset.X, MeshData.Offset.Y, 0), FRotator::ZeroRotator);
-      if (!Actor) continue;
+    AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(MeshData.Offset.X, MeshData.Offset.Y, 0), FRotator::ZeroRotator);
+    if (!Actor) continue;
 
-      UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
-      MeshComp->SetStaticMesh(StaticMesh);
-      Actor->SetActorLabel(FString::Printf(TEXT("LandscapeActor_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile()));
-      Actor->Tags.Add("LandscapeToMove");
-      MeshComp->CastShadow = false;
+    UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+    MeshComp->SetStaticMesh(StaticMesh);
+    Actor->SetActorLabel(FString::Printf(TEXT("LandscapeActor_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile()));
+    Actor->Tags.Add("LandscapeToMove");
+    MeshComp->CastShadow = false;
 
 #if ENGINE_MAJOR_VERSION > 4
-      Actor->SetIsSpatiallyLoaded(true);
+    Actor->SetIsSpatiallyLoaded(true);
 #endif
+    Landscapes.Add(Actor);
+  }
 
-      Landscapes.Add(Actor);
-    }
-  });
 }
 
 void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int TileSizeX, const int TileSizeY, const float MeshResolution)
@@ -634,18 +629,8 @@ void UOpenDriveToMap::LoadMap()
 
     if( DefaultHeightmap )
     {
-      FTexture2DMipMap& Mip = DefaultHeightmap->GetPlatformData()->Mips[0];
-
-      HeightmapWidth = Mip.SizeX;
-      HeightmapHeight = Mip.SizeY;
-
-      const uint16* RawData = static_cast<const uint16*>(Mip.BulkData.LockReadOnly());
-      int32 TotalPixels = HeightmapWidth * HeightmapHeight;
-
-      HeightmapPixels.SetNumUninitialized(TotalPixels);
-      FMemory::Memcpy(HeightmapPixels.GetData(), RawData, TotalPixels * sizeof(uint16));
-
-      Mip.BulkData.Unlock();
+      HeightmapCopy = DefaultHeightmap->GetCPUCopy();
+      HeightmapPixels = HeightmapCopy->AsG16();
     }
 
     do{
@@ -1013,34 +998,63 @@ void UOpenDriveToMap::GenerateTreePositions( const boost::optional<carla::road::
 float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
   if (DefaultHeightmap && HeightmapPixels.Num() > 0)
   {
-    // Get Texture size and world coordinates
-    int32 TextureSizeX = DefaultHeightmap->GetSizeX();
-    int32 TextureSizeY = DefaultHeightmap->GetSizeY();
+    int32 TextureSizeX = HeightmapCopy->GetWidth();
+    int32 TextureSizeY = HeightmapCopy->GetHeight();
 
-    // World coordinates are in centimeters, so we need to convert them to meters
+    // Normalize world coordinates to [0, 1]
     float NormalizedX = (PosX - WorldOriginPosition.X) / (WorldEndPosition.X - WorldOriginPosition.X) * 100.0f;
     float NormalizedY = (PosY - WorldOriginPosition.Y) / (WorldEndPosition.Y - WorldOriginPosition.Y) * 100.0f;
 
     NormalizedX = FMath::Clamp(NormalizedX, 0.0f, 1.0f);
     NormalizedY = FMath::Clamp(NormalizedY, 0.0f, 1.0f);
 
-    int32 PixelX = FMath::Clamp(FMath::FloorToInt(NormalizedX * TextureSizeX), 0, TextureSizeX - 1);
-    int32 PixelY = FMath::Clamp(FMath::FloorToInt(NormalizedY * TextureSizeY), 0, TextureSizeY - 1);
+    // Convert to texture coordinates
+    float TexX = NormalizedX * (TextureSizeX - 1);
+    float TexY = NormalizedY * (TextureSizeY - 1);
 
-    int32 Index = PixelY * TextureSizeX + PixelX;
+    int32 CenterX = FMath::RoundToInt(TexX);
+    int32 CenterY = FMath::RoundToInt(TexY);
 
-    uint16 PixelValue = HeightmapPixels.IsValidIndex(Index) ? HeightmapPixels[Index] : 0;
-    float NormalizedPixelValue = static_cast<float>(PixelValue) / 65535.0f;
+    float Total = 0.0f;
+    float Count = 0.0f;
 
-    float LandscapeHeight = NormalizedPixelValue * (MaxHeight - MinHeight) + MinHeight;
+    // Loop over 3×3 kernel
+    for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
+    {
+        for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
+        {
+            int32 SampleX = CenterX + OffsetX;
+            int32 SampleY = CenterY + OffsetY;
 
+            // Discard out-of-bounds
+            if (SampleX < 0 || SampleX >= TextureSizeX || SampleY < 0 || SampleY >= TextureSizeY)
+            {
+                continue;
+            }
+
+            int32 Index = SampleY * TextureSizeX + SampleX;
+            if (HeightmapPixels.IsValidIndex(Index))
+            {
+                uint16 PixelValue = HeightmapPixels[Index];
+                float Normalized = static_cast<float>(PixelValue) / 65535.0f;
+                Total += Normalized;
+                Count += 1.0f;
+            }
+        }
+    }
+
+    // Compute average if any valid pixels
+    float SmoothedValue = (Count > 0) ? Total / static_cast<float>(Count) : 0.0f;
+
+    // Convert to world height
+    float LandscapeHeight = SmoothedValue * (MaxHeight - MinHeight) + MinHeight;
     if (bDrivingLane)
     {
         return LandscapeHeight - carla::geom::deformation::GetBumpDeformation(PosX, PosY);
     }
     else
     {
-        return LandscapeHeight;
+        return LandscapeHeight - 5.0f;
     }
   }
   else
@@ -1094,11 +1108,11 @@ float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
     CollisionQuery,
     CollisionParams) )
   {
-    return HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f;
-  }else{
-    return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f - 1.0f;
+    return (HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true)) * 100.0f - 10.0f;
   }
-  return 0.0f;
+  
+  // If no hit, return the height based on the origin coordinates
+  return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f);
 }
 
 float UOpenDriveToMap::DistanceToLaneBorder(

@@ -255,7 +255,8 @@ private:
   UTexture2D* Heightmap;
 
 
-  TArray<uint16> HeightmapPixels;
+  FSharedImageConstRef HeightmapCopy;
+  TArrayView64<const uint16> HeightmapPixels;
   int32 HeightmapWidth = 0;
   int32 HeightmapHeight = 0;
 };
