@@ -22,4 +22,8 @@ public:
 
   UFUNCTION(BlueprintPure)
   static UObject* CopyAssetToPlugin(UObject* SourceObject, FString PluginName);
+
+  UFUNCTION(BlueprintCallable)
+  static FString GetProjectName();
+
 };

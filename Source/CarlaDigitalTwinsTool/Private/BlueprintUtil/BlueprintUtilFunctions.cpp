@@ -17,6 +17,13 @@
 #include "FileHelpers.h"
 
 DEFINE_LOG_CATEGORY(LogDigitalTwinsToolBlueprintUtil);
+
+FString UBlueprintUtilFunctions::GetProjectName()
+{
+  const UGeneralProjectSettings* ProjectSettings = GetDefault<UGeneralProjectSettings>();
+  return ProjectSettings->ProjectName;
+}
+
 UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FString PluginName)
 {
 #if WITH_EDITOR
