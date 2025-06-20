@@ -111,8 +111,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
       FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
       FString TargetRefObjPath = DestinationPath + "/" + RefObj->GetName();
 
-      UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
-
       UObject* LoadedDuplicatedRefObject = nullptr;
 
       if (!UEditorAssetLibrary::DoesAssetExist(TargetRefObjPath) && RefObjPath.Contains(TEXT("/CarlaDigitalTwinsTool")))
@@ -124,13 +122,8 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
 
       if (LoadedDuplicatedRefObject)
       {
-        UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("Replacement Map: %s -> %s"), *RefObjPath, *LoadedDuplicatedRefObject->GetPathName());
         ReplacementMap.Add(RefObj, LoadedDuplicatedRefObject);
         ObjectsToReplaceWithin.Add(LoadedDuplicatedRefObject);
-      }
-      else
-      {
-        UE_LOG(LogDigitalTwinsToolBlueprintUtil, Error, TEXT("Failed to load duplicated or existing asset: %s"), *TargetRefObjPath);
       }
     }
   }
@@ -144,7 +137,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     ObjectTools::ForceReplaceReferences(Replacement, ObjectsToReplace, ObjectsToReplaceWithin);
   }
 
-  UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("Saving modified plugin assets..."));
   UEditorLoadingAndSavingUtils::SaveDirtyPackages(true, true);
 
   return DuplicatedAsset;
