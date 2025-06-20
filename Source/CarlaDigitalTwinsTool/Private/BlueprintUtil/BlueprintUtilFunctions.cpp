@@ -16,6 +16,7 @@
 #include "EditorAssetLibrary.h"
 #include "FileHelpers.h"
 
+DEFINE_LOG_CATEGORY(LogDigitalTwinsToolBlueprintUtil);
 UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FString PluginName)
 {
 #if WITH_EDITOR
@@ -35,9 +36,6 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
   FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
   FString TargetAssetPath = DestinationPath + "/" + SourceAssetName;
 
-  UE_LOG(LogTemp, Warning, TEXT("DestinationPath: %s"), *DestinationPath);
-  UE_LOG(LogTemp, Warning, TEXT("TargetAssetPath: %s"), *TargetAssetPath);
-
   if (UEditorAssetLibrary::DoesAssetExist(TargetAssetPath))
   {
     UObject* ExistingAsset = UEditorAssetLibrary::LoadAsset(TargetAssetPath);
@@ -52,14 +50,14 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
 
   if (!DuplicatedAsset)
   {
-    UE_LOG(LogTemp, Error, TEXT("Failed to duplicate asset."));
+    UE_LOG(LogDigitalTwinsToolBlueprintUtil, Error, TEXT("Failed to duplicate asset."));
     return nullptr;
   }
 
   FString DuplicatedPath = DuplicatedAsset->GetPathName();
   if (!UEditorAssetLibrary::SaveAsset(DuplicatedPath, false))
   {
-    UE_LOG(LogTemp, Warning, TEXT("Duplicated asset created but not saved: %s"), *DuplicatedPath);
+    UE_LOG(LogDigitalTwinsToolBlueprintUtil, Warning, TEXT("Duplicated asset created but not saved: %s"), *DuplicatedPath);
   }
 
   TSet<UObject*> SubObjects;
@@ -106,7 +104,7 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
       FString DestinationPath = FString::Printf(TEXT("/%s/%s"), *PluginName, *RelativePath);
       FString TargetRefObjPath = DestinationPath + "/" + RefObj->GetName();
 
-      UE_LOG(LogTemp, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
+      UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("  Reference: %s (%s)"), *RefObj->GetName(), *RefObjPath);
 
       UObject* LoadedDuplicatedRefObject = nullptr;
 
@@ -119,13 +117,13 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
 
       if (LoadedDuplicatedRefObject)
       {
-        UE_LOG(LogTemp, Log, TEXT("Replacement Map: %s -> %s"), *RefObjPath, *LoadedDuplicatedRefObject->GetPathName());
+        UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("Replacement Map: %s -> %s"), *RefObjPath, *LoadedDuplicatedRefObject->GetPathName());
         ReplacementMap.Add(RefObj, LoadedDuplicatedRefObject);
         ObjectsToReplaceWithin.Add(LoadedDuplicatedRefObject);
       }
       else
       {
-        UE_LOG(LogTemp, Error, TEXT("Failed to load duplicated or existing asset: %s"), *TargetRefObjPath);
+        UE_LOG(LogDigitalTwinsToolBlueprintUtil, Error, TEXT("Failed to load duplicated or existing asset: %s"), *TargetRefObjPath);
       }
     }
   }
@@ -139,7 +137,7 @@ UObject* UBlueprintUtilFunctions::CopyAssetToPlugin(UObject* SourceObject, FStri
     ObjectTools::ForceReplaceReferences(Replacement, ObjectsToReplace, ObjectsToReplaceWithin);
   }
 
-  UE_LOG(LogTemp, Log, TEXT("Saving modified plugin assets..."));
+  UE_LOG(LogDigitalTwinsToolBlueprintUtil, Log, TEXT("Saving modified plugin assets..."));
   UEditorLoadingAndSavingUtils::SaveDirtyPackages(true, true);
 
   return DuplicatedAsset;

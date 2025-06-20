@@ -11,6 +11,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "BlueprintUtilFunctions.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogDigitalTwinsToolBlueprintUtil, Log, All);
 
 UCLASS(BlueprintType)
 class CARLADIGITALTWINSTOOL_API UBlueprintUtilFunctions : public UBlueprintFunctionLibrary
