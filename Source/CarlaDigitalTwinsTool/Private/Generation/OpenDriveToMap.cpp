@@ -1447,7 +1447,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     SCC2D->CaptureScene();
     TArray<FColor> Pixels;
-    RenderTarget->GetRenderTargetResource()->ReadPixels(Pixels);
+    RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
 
     auto Shape = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
