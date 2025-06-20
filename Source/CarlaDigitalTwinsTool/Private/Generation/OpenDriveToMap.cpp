@@ -678,7 +678,10 @@ void UOpenDriveToMap::LoadMap()
       FString CurrentMapName = World->GetMapName();
       CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
       UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
-      RenderRoadToTexture(World);
+      AsyncTask(ENamedThreads::GameThread, [&]
+          {
+              RenderRoadToTexture(World);
+          });
     }
 #endif
 
