@@ -652,7 +652,7 @@ void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int3
     FTLModule& Mod {HeadData.Modules[ModuleIndex]};
     Mod.bHasVisor = (NewState == ECheckBoxState::Checked);
 
-    UStaticMesh* NewMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+    UStaticMesh* NewMesh {FModuleMeshFactory::GetMeshForModule(HeadData, Mod)};
     if (!NewMesh)
     {
         UE_LOG(LogTemp, Error, TEXT("OnModuleVisorChanged: failed to get mesh for head %d, module %d"), HeadIndex, ModuleIndex);

@@ -15,17 +15,17 @@
 USTRUCT(BlueprintType)
 struct FTLModuleRow : public FTableRowBase
 {
-  GENERATED_BODY()
+    GENERATED_BODY()
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-  ETLHeadStyle Style;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
+    ETLHeadStyle Style;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-  ETLHeadOrientation Orientation;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
+    ETLHeadOrientation Orientation;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-  bool bHasVisor;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
+    bool bHasVisor;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-  FString Path;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
+    UStaticMesh* Mesh;
 };

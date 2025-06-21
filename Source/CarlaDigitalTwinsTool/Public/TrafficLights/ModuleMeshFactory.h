@@ -8,10 +8,16 @@
 
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
-
+#include "TrafficLights/TLModuleDataTable.h"
 
 class FModuleMeshFactory
 {
 public:
     static UStaticMesh* GetMeshForModule(const struct FTLHead& Head, const struct FTLModule& Module);
+
+private:
+    static UDataTable* GetModuleMeshTable();
+
+private:
+    static UDataTable* ModuleMeshTable;
 };
