@@ -52,6 +52,7 @@ private:
     void OnModuleVisorChanged(ECheckBoxState NewState, int32 HeadIndex, int32 ModuleIndex);
     void OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex);
     void OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex);
+    void RefreshModuleMeshOptions();
 
 private:
     FString GetHeadStyleText(ETLHeadStyle Style);
@@ -74,4 +75,5 @@ private:
     TArray<bool> HeadExpandedStates;
     TArray<bool> HeadModulesSectionExpandedStates;
     TArray<TArray<bool>> ModuleExpandedStates;
+    TArray<TArray<TArray<TSharedPtr<FString>>>> ModuleMeshNameOptionsPerHead;
 };

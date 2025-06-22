@@ -107,7 +107,23 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
     check(Heads.IsValidIndex(HeadIndex));
     check(Heads[HeadIndex].Modules.IsValidIndex(ModuleIndex));
 
-    FTLModule& Module = Heads[HeadIndex].Modules[ModuleIndex];
+    auto& Head    = Heads[HeadIndex];
+    auto& Module  = Head.Modules[ModuleIndex];
+    auto& MeshNames = ModuleMeshNameOptionsPerHead[HeadIndex][ModuleIndex];
+
+    TSharedPtr<FString> InitialMeshPtr = nullptr;
+    if (Module.ModuleMesh)
+    {
+        const FString CurrentName = Module.ModuleMesh->GetName();
+        for (auto& OptionPtr : MeshNames)
+        {
+            if (*OptionPtr == CurrentName)
+            {
+                InitialMeshPtr = OptionPtr;
+                break;
+            }
+        }
+    }
 
     static constexpr float PosMin   = -50.0f, PosMax   =  50.0f;
     static constexpr float RotMin   =   0.0f, RotMax   = 360.0f;
@@ -157,6 +173,63 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
         [
             SNew(SVerticalBox)
 
+            // — Module Meshes —
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0,2)
+            [
+                SNew(SHorizontalBox)
+
+                + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .VAlign(VAlign_Center)
+                [
+                    SNew(STextBlock).Text(FText::FromString("Mesh:"))
+                ]
+
+                + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .Padding(8,0)
+                [
+                    SNew(SComboBox<TSharedPtr<FString>>)
+                    .OptionsSource(&MeshNames)
+                    .InitiallySelectedItem(InitialMeshPtr)
+                    .OnGenerateWidget_Lambda([](TSharedPtr<FString> InPtr) {
+                        return SNew(STextBlock).Text(FText::FromString(*InPtr));
+                    })
+                    .OnSelectionChanged_Lambda(
+                        [this, HeadIndex, ModuleIndex](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
+                        if (!NewSel) return;
+                        auto& Head   = Heads[HeadIndex];
+                        auto& Module = Head.Modules[ModuleIndex];
+                        TArray<UStaticMesh*> MeshOptions = FModuleMeshFactory::GetAllMeshesForModule(Head, Module);
+                        int32 Idx = INDEX_NONE;
+                        for (int32 i = 0; i < MeshOptions.Num(); ++i)
+                        {
+                            if (MeshOptions[i] && MeshOptions[i]->GetName() == *NewSel)
+                            {
+                            Idx = i;
+                            break;
+                            }
+                        }
+
+                        if (Idx != INDEX_NONE)
+                        {
+                            Module.ModuleMesh = MeshOptions[Idx];
+                            PreviewViewport->Rebuild(Heads);
+                        }
+                        }
+                    )
+                    [
+                    SNew(STextBlock)
+                        .Text_Lambda([this, HeadIndex, ModuleIndex]() {
+                        const UStaticMesh* M = Heads[HeadIndex].Modules[ModuleIndex].ModuleMesh;
+                        return FText::FromString(M ? M->GetName() : TEXT("Select..."));
+                        })
+                    ]
+                ]
+            ]
+
             // — Light Type ComboBox —
             + SVerticalBox::Slot()
             .AutoHeight()
@@ -188,32 +261,30 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                     .OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
                         return SNew(STextBlock).Text(FText::FromString(*InItem));
                     })
-                    .OnSelectionChanged_Lambda([this, HeadIndex, ModuleIndex](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
+                    .OnSelectionChanged_Lambda([&](TSharedPtr<FString> NewSel, ESelectInfo::Type) {
                         const int32 Choice = LightTypeOptions.IndexOfByPredicate(
                             [&](auto& StrPtr){ return *StrPtr == *NewSel; }
                         );
-                        FTLHead& HeadData {Heads[HeadIndex]};
-                        FTLModule& Mod    {HeadData.Modules[ModuleIndex]};
 
-                        Mod.LightType = static_cast<ETLLightType>(Choice);
+                        Module.LightType = static_cast<ETLLightType>(Choice);
 
                         if (PreviewViewport->LightTypesTable)
                         {
-                            static const UEnum* EnumPtr = StaticEnum<ETLLightType>();
-                            const FString EnumKey = EnumPtr->GetNameStringByValue( (int64)Mod.LightType );
-                            const FName   RowName(*EnumKey);
+                            static const UEnum* EnumPtr {StaticEnum<ETLLightType>()};
+                            const FString EnumKey {EnumPtr->GetNameStringByValue((int64)Module.LightType)};
+                            const FName RowName(*EnumKey);
 
-                            if (const FTLLightTypeRow* Row = PreviewViewport->LightTypesTable->FindRow<FTLLightTypeRow>(RowName, TEXT("Lookup LightType")))
+                            if (const FTLLightTypeRow* Row {PreviewViewport->LightTypesTable->FindRow<FTLLightTypeRow>(RowName, TEXT("Lookup LightType"))})
                             {
-                                Mod.U = Row->AtlasCoords.X;
-                                Mod.V = Row->AtlasCoords.Y;
-                                Mod.EmissiveColor   = Row->Color;
+                                Module.U = Row->AtlasCoords.X;
+                                Module.V = Row->AtlasCoords.Y;
+                                Module.EmissiveColor   = Row->Color;
 
-                                if (Mod.LightMID)
+                                if (Module.LightMID)
                                 {
-                                    Mod.LightMID->SetVectorParameterValue(
+                                    Module.LightMID->SetVectorParameterValue(
                                         TEXT("Emissive Color"),
-                                        Mod.EmissiveColor
+                                        Module.EmissiveColor
                                     );
                                 }
                             }
@@ -224,28 +295,27 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                             }
                         }
 
-                        UStaticMeshComponent* Comp = Mod.ModuleMeshComponent;
+                        UStaticMeshComponent* Comp = Module.ModuleMeshComponent;
                         if (Comp)
                         {
-                            if (UMaterialInstanceDynamic* LightMID = FMaterialFactory::GetLightMaterialInstance(Comp))
+                            if (UMaterialInstanceDynamic* LightMID {FMaterialFactory::GetLightMaterialInstance(Comp)})
                             {
-                                LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Mod.EmissiveIntensity);
-                                LightMID->SetVectorParameterValue(TEXT("Emissive Color"), Mod.EmissiveColor);
-                                LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(Mod.U));
-                                LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(Mod.V));
+                                LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Module.EmissiveIntensity);
+                                LightMID->SetVectorParameterValue(TEXT("Emissive Color"), Module.EmissiveColor);
+                                LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(Module.U));
+                                LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(Module.V));
                                 Comp->SetMaterial(1, LightMID);
-                                Mod.LightMID = LightMID;
+                                Module.LightMID = LightMID;
                             }
                         }
-
                         Rebuild();
                     })
                     [
                         SNew(STextBlock)
-                        .Text_Lambda([this, HeadIndex, ModuleIndex]() {
+                        .Text_Lambda([&]() {
                             return FText::FromString(
                                 GetLightTypeText(
-                                    Heads[HeadIndex].Modules[ModuleIndex].LightType
+                                    Module.LightType
                                 )
                             );
                         })
@@ -277,15 +347,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SSlider)
                     .MinValue(0.0f).MaxValue(1000.0f)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].EmissiveIntensity;
+                    .Value_Lambda([&]() {
+                        return Module.EmissiveIntensity;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float NewVal) {
-                        FTLModule& Mod = Heads[HeadIndex].Modules[ModuleIndex];
-                        Mod.EmissiveIntensity = NewVal;
-                        if (Mod.LightMID)
+                    .OnValueChanged_Lambda([&](float NewVal) {
+                        Module.EmissiveIntensity = NewVal;
+                        if (Module.LightMID)
                         {
-                            Mod.LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Mod.EmissiveIntensity);
+                            Module.LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), Module.EmissiveIntensity);
                         }
                         Rebuild();
                     })
@@ -302,19 +371,18 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 .Padding(4)
                 [
                     SNew(SColorPicker)
-                    .TargetColorAttribute_Lambda([this, HeadIndex, ModuleIndex]()
+                    .TargetColorAttribute_Lambda([&]()
                     {
-                        return Heads[HeadIndex].Modules[ModuleIndex].EmissiveColor;
+                        return Module.EmissiveColor;
                     })
                     .UseAlpha(false)
                     .OnlyRefreshOnMouseUp(false)
-                    .OnColorCommitted_Lambda([this, HeadIndex, ModuleIndex](FLinearColor NewColor)
+                    .OnColorCommitted_Lambda([&](FLinearColor NewColor)
                     {
-                        auto& Mod = Heads[HeadIndex].Modules[ModuleIndex];
-                        Mod.EmissiveColor = NewColor;
-                        if (Mod.LightMID)
+                        Module.EmissiveColor = NewColor;
+                        if (Module.LightMID)
                         {
-                            Mod.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
+                            Module.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), NewColor);
                         }
                         else
                         {
@@ -331,8 +399,8 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
             .Padding(0,2)
             [
                 SNew(SCheckBox)
-                .IsChecked_Lambda([this, HeadIndex, ModuleIndex]() {
-                    return Heads[HeadIndex].Modules[ModuleIndex].bHasVisor
+                .IsChecked_Lambda([&]() {
+                    return Module.bHasVisor
                         ? ECheckBoxState::Checked
                         : ECheckBoxState::Unchecked;
                 })
@@ -365,14 +433,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().X;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.X = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -385,14 +452,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SSlider)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().X;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().X;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.X = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -413,14 +479,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().Y;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.Y = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -431,14 +496,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SSlider)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Y;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().Y;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.Y = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                     {
                         Rebuild();
@@ -459,14 +523,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().Z;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.Z = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -477,14 +540,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SSlider)
                     .MinValue(PosMin).MaxValue(PosMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.GetLocation().Z;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.GetLocation().Z;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V){
-                        auto& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FVector L = M.Offset.GetLocation();
+                    .OnValueChanged_Lambda([&](float V){
+                        FVector L = Module.Offset.GetLocation();
                         L.Z = V;
-                        M.Offset.SetLocation(L);
+                        Module.Offset.SetLocation(L);
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -509,14 +571,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(RotMin).MaxValue(RotMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Pitch;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.Rotator().Pitch;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FRotator R = M.Offset.Rotator();
+                    .OnValueChanged_Lambda([&](float V) {
+                        FRotator R = Module.Offset.Rotator();
                         R.Pitch = V;
-                        M.Offset.SetRotation(FQuat(R));
+                        Module.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -529,14 +590,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(RotMin).MaxValue(RotMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Yaw;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.Rotator().Yaw;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FRotator R = M.Offset.Rotator();
+                    .OnValueChanged_Lambda([&](float V) {
+                        FRotator R = Module.Offset.Rotator();
                         R.Yaw = V;
-                        M.Offset.SetRotation(FQuat(R));
+                        Module.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -549,14 +609,13 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 HeadIndex, i
                 [
                     SNew(SNumericEntryBox<float>)
                     .MinValue(RotMin).MaxValue(RotMax)
-                    .Value_Lambda([this, HeadIndex, ModuleIndex]() {
-                        return Heads[HeadIndex].Modules[ModuleIndex].Offset.Rotator().Roll;
+                    .Value_Lambda([&]() {
+                        return Module.Offset.Rotator().Roll;
                     })
-                    .OnValueChanged_Lambda([this, HeadIndex, ModuleIndex](float V) {
-                        FTLModule& M = Heads[HeadIndex].Modules[ModuleIndex];
-                        FRotator R = M.Offset.Rotator();
+                    .OnValueChanged_Lambda([&](float V) {
+                        FRotator R = Module.Offset.Rotator();
                         R.Roll = V;
-                        M.Offset.SetRotation(FQuat(R));
+                        Module.Offset.SetRotation(FQuat(R));
                         if (PreviewViewport.IsValid())
                         {
                             Rebuild();
@@ -649,20 +708,20 @@ void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int3
     FTLHead& HeadData {Heads[HeadIndex]};
     check(HeadData.Modules.IsValidIndex(ModuleIndex));
 
-    FTLModule& Mod {HeadData.Modules[ModuleIndex]};
-    Mod.bHasVisor = (NewState == ECheckBoxState::Checked);
+    FTLModule& Module {HeadData.Modules[ModuleIndex]};
+    Module.bHasVisor = (NewState == ECheckBoxState::Checked);
 
-    UStaticMesh* NewMesh {FModuleMeshFactory::GetMeshForModule(HeadData, Mod)};
+    UStaticMesh* NewMesh {FModuleMeshFactory::GetMeshForModule(HeadData, Module)};
     if (!NewMesh)
     {
         UE_LOG(LogTemp, Error, TEXT("OnModuleVisorChanged: failed to get mesh for head %d, module %d"), HeadIndex, ModuleIndex);
         return;
     }
 
-    Mod.ModuleMesh = NewMesh;
-    if (Mod.ModuleMeshComponent)
+    Module.ModuleMesh = NewMesh;
+    if (Module.ModuleMeshComponent)
     {
-        Mod.ModuleMeshComponent->SetStaticMesh(NewMesh);
+        Module.ModuleMeshComponent->SetStaticMesh(NewMesh);
     }
 
     Rebuild();
@@ -676,13 +735,13 @@ void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOri
     FTLHead& HeadData {Heads[HeadIndex]};
     HeadData.Orientation = NewOrientation;
 
-    for (FTLModule& Mod : HeadData.Modules)
+    for (FTLModule& Module : HeadData.Modules)
     {
-        Mod.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+        Module.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Module);
 
-        if (Mod.ModuleMeshComponent)
+        if (Module.ModuleMeshComponent)
         {
-            Mod.ModuleMeshComponent->SetStaticMesh(Mod.ModuleMesh);
+            Module.ModuleMeshComponent->SetStaticMesh(Module.ModuleMesh);
         }
     }
 
@@ -697,13 +756,13 @@ void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 He
     FTLHead& HeadData {Heads[HeadIndex]};
     HeadData.Style = NewStyle;
 
-    for (FTLModule& Mod : HeadData.Modules)
+    for (FTLModule& Module : HeadData.Modules)
     {
-        Mod.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Mod);
+        Module.ModuleMesh = FModuleMeshFactory::GetMeshForModule(HeadData, Module);
 
-        if (Mod.ModuleMeshComponent)
+        if (Module.ModuleMeshComponent)
         {
-            Mod.ModuleMeshComponent->SetStaticMesh(Mod.ModuleMesh);
+            Module.ModuleMeshComponent->SetStaticMesh(Module.ModuleMesh);
         }
     }
 
@@ -1415,6 +1474,7 @@ FReply STrafficLightToolWidget::OnDeleteModuleClicked(int32 HeadIndex, int32 Mod
 void STrafficLightToolWidget::Rebuild()
 {
     check(PreviewViewport.IsValid());
+    RefreshModuleMeshOptions();
     PreviewViewport->ClearModuleMeshes();
     for (FTLHead& Head : Heads)
     {
@@ -1522,5 +1582,32 @@ void STrafficLightToolWidget::OnMoveModuleDown(int32 HeadIndex, int32 ModuleInde
     {
         HeadData.Modules.Swap(ModuleIndex, ModuleIndex + 1);
         Rebuild();
+    }
+}
+
+void STrafficLightToolWidget::RefreshModuleMeshOptions()
+{
+    ModuleMeshNameOptionsPerHead.SetNum(Heads.Num());
+
+    for (int32 HeadIdx = 0; HeadIdx < Heads.Num(); ++HeadIdx)
+    {
+        FTLHead& Head = Heads[HeadIdx];
+        ModuleMeshNameOptionsPerHead[HeadIdx].SetNum(Head.Modules.Num());
+
+        for (int32 ModIdx = 0; ModIdx < Head.Modules.Num(); ++ModIdx)
+        {
+            TArray<UStaticMesh*> MeshOptions = FModuleMeshFactory::GetAllMeshesForModule(Head, Head.Modules[ModIdx]);
+
+            auto& NameList = ModuleMeshNameOptionsPerHead[HeadIdx][ModIdx];
+            NameList.Empty();
+
+            for (UStaticMesh* Mesh : MeshOptions)
+            {
+                if (Mesh)
+                {
+                    NameList.Add(MakeShared<FString>(Mesh->GetName()));
+                }
+            }
+        }
     }
 }
