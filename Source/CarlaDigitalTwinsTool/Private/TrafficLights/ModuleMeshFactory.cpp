@@ -1,7 +1,5 @@
 #include "TrafficLights/ModuleMeshFactory.h"
 #include "UObject/SoftObjectPath.h"
-#include "TrafficLights/TLHead.h"
-#include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLHeadOrientation.h"
 #include "TrafficLights/TLHeadStyle.h"
 #include "UObject/ConstructorHelpers.h"
@@ -60,4 +58,44 @@ UStaticMesh* FModuleMeshFactory::GetMeshForModule(const FTLHead& Head, const FTL
     }
 
     return nullptr;
+}
+
+TArray<UStaticMesh*> FModuleMeshFactory::GetAllMeshesForModule(const FTLHead& Head, const FTLModule& Module)
+{
+    TArray<UStaticMesh*> Meshes;
+    UDataTable* ModuleMeshTable {GetModuleMeshTable()};
+    if (!ModuleMeshTable)
+    {
+        UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: ModuleMeshTable is null"));
+        return Meshes;
+    }
+
+    // Get rows
+    const auto Rows {ModuleMeshTable->GetRowNames()};
+    if (Rows.Num() == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: no rows found in ModuleMeshTable"));
+        return Meshes;
+    }
+
+    for (const FName& RowName : Rows)
+    {
+        if (const FTLModuleRow* Row = ModuleMeshTable->FindRow<FTLModuleRow>(RowName, TEXT("GetMeshForModule")))
+        {
+            if (!Row)
+            {
+                UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: row '%s' not found"), *RowName.ToString());
+                continue;
+            }
+            if (Row->Style == Head.Style && Row->Orientation == Head.Orientation && Row->bHasVisor == Module.bHasVisor)
+            {
+                if (Row->Mesh)
+                {
+                    Meshes.Add(Row->Mesh);
+                }
+            }
+        }
+    }
+
+    return Meshes;
 }

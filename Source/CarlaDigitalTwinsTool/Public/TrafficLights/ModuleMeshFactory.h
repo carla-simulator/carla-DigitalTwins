@@ -9,11 +9,14 @@
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 #include "TrafficLights/TLModuleDataTable.h"
+#include "TrafficLights/TLHead.h"
+#include "TrafficLights/TLModule.h"
 
 class FModuleMeshFactory
 {
 public:
-    static UStaticMesh* GetMeshForModule(const struct FTLHead& Head, const struct FTLModule& Module);
+    static UStaticMesh* GetMeshForModule(const FTLHead& Head, const FTLModule& Module);
+    static TArray<UStaticMesh*> GetAllMeshesForModule(const FTLHead& Head, const FTLModule& Module);
 
 private:
     static UDataTable* GetModuleMeshTable();
