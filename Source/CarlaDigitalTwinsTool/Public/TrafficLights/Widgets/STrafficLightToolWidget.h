@@ -10,7 +10,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "TrafficLights/Widgets/STrafficLightPreviewViewport.h"
 #include "TrafficLights/TLHead.h"
-#include "TrafficLights/TLHeadOrientation.h"
+#include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLHeadAttachment.h"
 #include "TrafficLights/TLHeadStyle.h"
 
@@ -44,20 +44,20 @@ private:
     FReply OnAddModuleClicked(int32 HeadIndex);
     /** Delete existing head by index */
     FReply OnDeleteModuleClicked(int32 HeadIndex, int32 ModuleIndex);
-    void ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation);
+    void ChangeModulesOrientation(int32 HeadIndex, ETLOrientation NewOrientation);
     void OnMoveModuleUp(int32 HeadIndex, int32 ModuleIndex);
     void OnMoveModuleDown(int32 HeadIndex, int32 ModuleIndex);
     FReply OnMoveModuleUpClicked(int32 HeadIndex, int32 ModuleIndex);
     FReply OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex);
     void OnModuleVisorChanged(ECheckBoxState NewState, int32 HeadIndex, int32 ModuleIndex);
-    void OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex);
+    void OnHeadOrientationChanged(ETLOrientation NewOrientation, int32 HeadIndex);
     void OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex);
     void RefreshModuleMeshOptions();
 
 private:
     FString GetHeadStyleText(ETLHeadStyle Style);
     FString GetHeadAttachmentText(ETLHeadAttachment Attach);
-    FString GetHeadOrientationText(ETLHeadOrientation Orient);
+    FString GetHeadOrientationText(ETLOrientation Orient);
     FString GetLightTypeText(ETLLightType Type);
 
     /** Head option values */

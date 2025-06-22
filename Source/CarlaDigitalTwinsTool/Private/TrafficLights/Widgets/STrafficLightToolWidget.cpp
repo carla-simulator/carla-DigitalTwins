@@ -44,7 +44,7 @@ void STrafficLightToolWidget::Construct(const FArguments& InArgs)
     }
     if (HeadOrientationOptions.Num() == 0)
     {
-        if (UEnum* EnumPtr = StaticEnum<ETLHeadOrientation>())
+        if (UEnum* EnumPtr = StaticEnum<ETLOrientation>())
         {
             for (int32 i = 0; i < EnumPtr->NumEnums() - 1; ++i)
             {
@@ -727,7 +727,7 @@ void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int3
     Rebuild();
 }
 
-void STrafficLightToolWidget::OnHeadOrientationChanged(ETLHeadOrientation NewOrientation, int32 HeadIndex)
+void STrafficLightToolWidget::OnHeadOrientationChanged(ETLOrientation NewOrientation, int32 HeadIndex)
 {
     check(PreviewViewport.IsValid());
     check(Heads.IsValidIndex(HeadIndex));
@@ -877,7 +877,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 Index)
                     const int32 Choice = HeadOrientationOptions.IndexOfByPredicate(
                         [&](auto& S){ return S == NewValue; }
                     );
-                    ETLHeadOrientation NewOrient = static_cast<ETLHeadOrientation>(Choice);
+                    ETLOrientation NewOrient = static_cast<ETLOrientation>(Choice);
                     OnHeadOrientationChanged(NewOrient, Index);
                 })
                 [
@@ -1498,9 +1498,9 @@ FString STrafficLightToolWidget::GetHeadAttachmentText(ETLHeadAttachment Attach)
     return EnumPtr->GetDisplayNameTextByValue((int64)Attach).ToString();
 }
 
-FString STrafficLightToolWidget::GetHeadOrientationText(ETLHeadOrientation Orient)
+FString STrafficLightToolWidget::GetHeadOrientationText(ETLOrientation Orient)
 {
-    const UEnum* EnumPtr = StaticEnum<ETLHeadOrientation>();
+    const UEnum* EnumPtr = StaticEnum<ETLOrientation>();
     if (!EnumPtr) return FString(TEXT("Unknown"));
     return EnumPtr->GetDisplayNameTextByValue((int64)Orient).ToString();
 }
@@ -1512,7 +1512,7 @@ FString STrafficLightToolWidget::GetLightTypeText(ETLLightType Type)
     return EnumPtr->GetDisplayNameTextByValue((int64)Type).ToString();
 }
 
-void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadOrientation NewOrientation)
+void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLOrientation NewOrientation)
 {
     check(PreviewViewport.IsValid());
     check(Heads.IsValidIndex(HeadIndex));
@@ -1530,11 +1530,11 @@ void STrafficLightToolWidget::ChangeModulesOrientation(int32 HeadIndex, ETLHeadO
         // Adjust the offset based on the new orientation
         switch (NewOrientation)
         {
-            case ETLHeadOrientation::Vertical:
+            case ETLOrientation::Vertical:
                 //TODO: Adjust the transform, not the offset
                 Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, Module.Offset.GetLocation().Y, ModuleIndex * 70.0f));
                 break;
-            case ETLHeadOrientation::Horizontal:
+            case ETLOrientation::Horizontal:
                 //TODO: Adjust the transform, not the offset
                 Module.Offset.SetLocation(FVector(Module.Offset.GetLocation().X, ModuleIndex * 70.0f, Module.Offset.GetLocation().Z));
                 break;

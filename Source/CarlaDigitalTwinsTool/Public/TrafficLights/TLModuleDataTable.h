@@ -9,7 +9,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "TrafficLights/TLHeadStyle.h"
-#include "TrafficLights/TLHeadOrientation.h"
+#include "TrafficLights/TLOrientation.h"
 #include "TLModuleDataTable.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,7 +21,7 @@ struct FTLModuleRow : public FTableRowBase
     ETLHeadStyle Style;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    ETLHeadOrientation Orientation;
+    ETLOrientation Orientation;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
     bool bHasVisor;

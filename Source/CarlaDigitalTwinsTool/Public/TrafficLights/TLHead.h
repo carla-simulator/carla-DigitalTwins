@@ -12,7 +12,7 @@
 #include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLHeadStyle.h"
 #include "TrafficLights/TLHeadAttachment.h"
-#include "TrafficLights/TLHeadOrientation.h"
+#include "TrafficLights/TLOrientation.h"
 #include "TLHead.generated.h"
 
 USTRUCT(BlueprintType)
@@ -38,7 +38,7 @@ struct FTLHead
 
     /** Orientation of the head */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLHeadOrientation Orientation { ETLHeadOrientation::Vertical };
+    ETLOrientation Orientation { ETLOrientation::Vertical };
 
     //** Has backplate */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")

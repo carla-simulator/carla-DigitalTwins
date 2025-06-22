@@ -1,6 +1,6 @@
 #include "TrafficLights/ModuleMeshFactory.h"
 #include "UObject/SoftObjectPath.h"
-#include "TrafficLights/TLHeadOrientation.h"
+#include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLHeadStyle.h"
 #include "UObject/ConstructorHelpers.h"
 
