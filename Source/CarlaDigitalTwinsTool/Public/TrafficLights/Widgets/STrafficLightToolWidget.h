@@ -12,7 +12,7 @@
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLHeadAttachment.h"
-#include "TrafficLights/TLHeadStyle.h"
+#include "TrafficLights/TLStyle.h"
 
 class STrafficLightToolWidget : public SCompoundWidget
 {
@@ -51,11 +51,11 @@ private:
     FReply OnMoveModuleDownClicked(int32 HeadIndex, int32 ModuleIndex);
     void OnModuleVisorChanged(ECheckBoxState NewState, int32 HeadIndex, int32 ModuleIndex);
     void OnHeadOrientationChanged(ETLOrientation NewOrientation, int32 HeadIndex);
-    void OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex);
+    void OnHeadStyleChanged(ETLStyle NewStyle, int32 HeadIndex);
     void RefreshModuleMeshOptions();
 
 private:
-    FString GetHeadStyleText(ETLHeadStyle Style);
+    FString GetHeadStyleText(ETLStyle Style);
     FString GetHeadAttachmentText(ETLHeadAttachment Attach);
     FString GetHeadOrientationText(ETLOrientation Orient);
     FString GetLightTypeText(ETLLightType Type);

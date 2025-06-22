@@ -8,7 +8,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "TrafficLights/TLHeadStyle.h"
+#include "TrafficLights/TLStyle.h"
 #include "TrafficLights/TLOrientation.h"
 #include "TLModuleDataTable.generated.h"
 
@@ -18,7 +18,7 @@ struct FTLModuleRow : public FTableRowBase
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    ETLHeadStyle Style;
+    ETLStyle Style;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
     ETLOrientation Orientation;

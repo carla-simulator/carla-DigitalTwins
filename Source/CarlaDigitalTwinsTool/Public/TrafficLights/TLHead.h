@@ -10,7 +10,7 @@
 #include "Containers/Array.h"
 
 #include "TrafficLights/TLModule.h"
-#include "TrafficLights/TLHeadStyle.h"
+#include "TrafficLights/TLStyle.h"
 #include "TrafficLights/TLHeadAttachment.h"
 #include "TrafficLights/TLOrientation.h"
 #include "TLHead.generated.h"
@@ -30,7 +30,7 @@ struct FTLHead
 
     /** Head style */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLHeadStyle Style { ETLHeadStyle::NorthAmerican };
+    ETLStyle Style { ETLStyle::NorthAmerican };
 
     /** Attachment type */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")

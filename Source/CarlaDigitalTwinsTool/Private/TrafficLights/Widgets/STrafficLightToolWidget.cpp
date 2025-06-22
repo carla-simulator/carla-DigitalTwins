@@ -22,7 +22,7 @@ void STrafficLightToolWidget::Construct(const FArguments& InArgs)
 {
     if (HeadStyleOptions.Num() == 0)
     {
-        if (UEnum* EnumPtr = StaticEnum<ETLHeadStyle>())
+        if (UEnum* EnumPtr = StaticEnum<ETLStyle>())
         {
             for (int32 i = 0; i < EnumPtr->NumEnums() - 1; ++i)
             {
@@ -748,7 +748,7 @@ void STrafficLightToolWidget::OnHeadOrientationChanged(ETLOrientation NewOrienta
     Rebuild();
 }
 
-void STrafficLightToolWidget::OnHeadStyleChanged(ETLHeadStyle NewStyle, int32 HeadIndex)
+void STrafficLightToolWidget::OnHeadStyleChanged(ETLStyle NewStyle, int32 HeadIndex)
 {
     check(PreviewViewport.IsValid());
     check(Heads.IsValidIndex(HeadIndex));
@@ -825,7 +825,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 Index)
                 .OnSelectionChanged_Lambda([this,Index](TSharedPtr<FString> New, ESelectInfo::Type)
                 {
                     const int32 Choice = HeadStyleOptions.IndexOfByPredicate([&](auto& S){ return S == New; });
-                    Heads[Index].Style = static_cast<ETLHeadStyle>(Choice);
+                    Heads[Index].Style = static_cast<ETLStyle>(Choice);
                     OnHeadStyleChanged(Heads[Index].Style, Index);
                 })
                 [
@@ -1484,9 +1484,9 @@ void STrafficLightToolWidget::Rebuild()
     RefreshHeadList();
 }
 
-FString STrafficLightToolWidget::GetHeadStyleText(ETLHeadStyle Style)
+FString STrafficLightToolWidget::GetHeadStyleText(ETLStyle Style)
 {
-    const UEnum* EnumPtr = StaticEnum<ETLHeadStyle>();
+    const UEnum* EnumPtr = StaticEnum<ETLStyle>();
     if (!EnumPtr) return FString(TEXT("Unknown"));
     return EnumPtr->GetDisplayNameTextByValue((int64)Style).ToString();
 }

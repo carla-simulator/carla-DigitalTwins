@@ -43,7 +43,7 @@ public:
 public:
 
     /** Set the head style  */
-    void SetHeadStyle(int32 Index, ETLHeadStyle Style);
+    void SetHeadStyle(int32 Index, ETLStyle Style);
 
     /** Modules */
 public:

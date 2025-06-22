@@ -80,7 +80,7 @@ STrafficLightPreviewViewport::~STrafficLightPreviewViewport()
     }
 }
 
-void STrafficLightPreviewViewport::SetHeadStyle(int32 Index, ETLHeadStyle Style)
+void STrafficLightPreviewViewport::SetHeadStyle(int32 Index, ETLStyle Style)
 {
 }
 

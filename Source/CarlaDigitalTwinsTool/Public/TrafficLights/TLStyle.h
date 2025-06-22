@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "TLHeadStyle.generated.h"
+#include "TLStyle.generated.h"
 
 UENUM(BlueprintType)
-enum class ETLHeadStyle : uint8
+enum class ETLStyle : uint8
 {
     NorthAmerican   UMETA(DisplayName = "North American Standard"),
     European        UMETA(DisplayName = "European Standard"),

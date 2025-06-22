@@ -1,7 +1,7 @@
 #include "TrafficLights/ModuleMeshFactory.h"
 #include "UObject/SoftObjectPath.h"
 #include "TrafficLights/TLOrientation.h"
-#include "TrafficLights/TLHeadStyle.h"
+#include "TrafficLights/TLStyle.h"
 #include "UObject/ConstructorHelpers.h"
 
 UDataTable* FModuleMeshFactory::ModuleMeshTable = nullptr;
