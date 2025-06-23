@@ -1453,10 +1453,12 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     ImageTask->PixelPreProcessors.Add(TAsyncAlphaWrite<FColor>(255));
 
     auto& HighResScreenshotConfig = GetHighResScreenshotConfig();
-    HighResScreenshotConfig.ImageWriteQueue->Enqueue(MoveTemp(ImageTask));
+    auto Task = HighResScreenshotConfig.ImageWriteQueue->Enqueue(MoveTemp(ImageTask));
 
     for (auto& HiddenActor : HiddenActors)
         HiddenActor->SetActorHiddenInGame(false);
+
+    Task.Wait();
 
     return nullptr;
 }
