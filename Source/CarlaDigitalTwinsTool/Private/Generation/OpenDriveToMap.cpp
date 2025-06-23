@@ -1375,29 +1375,19 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 {
     const double Limit = 2000000.0;
 
-    auto Min = FVector(Limit);
-    auto Max = FVector (-Limit);
+    FBox Bounds(EForceInit::ForceInitToZero);
+
     TArray<AActor*> HiddenActors;
     {
         TSet<AActor*> MeshActorSet;
         {
-            TArray<AActor*> MeshActors;
-            UGameplayStatics::GetAllActorsOfClass(World, UStaticMesh::StaticClass(), MeshActors);
-            for (auto& MeshActor : MeshActors)
+            TArray<AActor*> Actors;
+            UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), Actors);
+            for (auto& Actor : Actors)
             {
-                auto SMA = Cast<AStaticMeshActor>(MeshActor);
-                if (!SMA)
-                    continue;
-                auto SMC = SMA->GetStaticMeshComponent();
-                if (!SMC)
-                    continue;
-                auto SM = SMC->GetStaticMesh();
-                if (!SM)
-                    continue;
-                auto BoundingBox = SM->GetBoundingBox();
-                Min = FVector::Min(Min, BoundingBox.Min);
-                Max = FVector::Max(Max, BoundingBox.Max);
-                MeshActorSet.Add(MeshActor);
+                auto BoundingBox = Actor->GetComponentsBoundingBox();
+                Bounds += BoundingBox;
+                MeshActorSet.Add(Actor);
             }
         }
         {
@@ -1416,10 +1406,10 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         }
     }
 
-    auto Center = (Max + Min) / 2.0F;
-    auto Extent = (Max - Min) / 2.0F;
+    auto Center = Bounds.GetCenter();
+    auto Extent = Bounds.GetExtent();
     auto OrthoWidth = std::max(Extent.X, Extent.Y) * 2.0F;
-    auto Location = FVector(Center.X, Center.Y, Max.Z);
+    auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
     auto Rotation = FRotator(-90, 0, 0);
 
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
@@ -1435,8 +1425,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         ASceneCapture2D::StaticClass(),
         ActorSpawnParameters);
     auto SCC2D = Camera->GetCaptureComponent2D();
-    // SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
-    // SCC2D->OrthoWidth = OrthoWidth;
+    SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
+    SCC2D->OrthoWidth = OrthoWidth;
     SCC2D->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
     SCC2D->bCaptureEveryFrame = false;
     SCC2D->bCaptureOnMovement = false;
