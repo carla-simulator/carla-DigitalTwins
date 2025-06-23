@@ -1009,19 +1009,19 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
     NormalizedY = FMath::Clamp(NormalizedY, 0.0f, 1.0f);
 
     // Convert to texture coordinates
-    float TexX = NormalizedX * (TextureSizeX - 1);
-    float TexY = NormalizedY * (TextureSizeY - 1);
+    float TexX = NormalizedX * (TextureSizeX);
+    float TexY = NormalizedY * (TextureSizeY);
 
     int32 CenterX = FMath::RoundToInt(TexX);
     int32 CenterY = FMath::RoundToInt(TexY);
 
     float Total = 0.0f;
     float Count = 0.0f;
-
-    // Loop over 3×3 kernel
-    for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
+    int32 LoopSize = 5;
+    // Loop over LoopSizexLoopSize kernel
+    for (int32 OffsetY = -LoopSize; OffsetY <= LoopSize; ++OffsetY)
     {
-        for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
+        for (int32 OffsetX = -LoopSize; OffsetX <= LoopSize; ++OffsetX)
         {
             int32 SampleX = CenterX + OffsetX;
             int32 SampleY = CenterY + OffsetY;
@@ -1050,7 +1050,7 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
     float LandscapeHeight = SmoothedValue * (MaxHeight - MinHeight) + MinHeight;
     if (bDrivingLane)
     {
-        return LandscapeHeight - carla::geom::deformation::GetBumpDeformation(PosX, PosY);
+        return LandscapeHeight /*- carla::geom::deformation::GetBumpDeformation(PosX, PosY)*/;
     }
     else
     {
@@ -1108,11 +1108,11 @@ float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
     CollisionQuery,
     CollisionParams) )
   {
-    return (HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true)) * 100.0f - 10.0f;
+    return ((HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true)) * 100.0f) - 10.0f;
   }
   
   // If no hit, return the height based on the origin coordinates
-  return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f);
+  return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f;
 }
 
 float UOpenDriveToMap::DistanceToLaneBorder(
