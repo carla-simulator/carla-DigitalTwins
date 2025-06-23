@@ -4,6 +4,7 @@
 
 #include "Online/CustomFileDownloader.h"
 #include "Generation/OpenDriveToMap.h"
+#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "HttpModule.h"
 #include "Http.h"
 #include "Misc/FileHelper.h"
@@ -12,34 +13,37 @@
 
 #include <OSM2ODR.h>
 
-void UCustomFileDownloader::ConvertOSMInOpenDrive(FString FilePath, float Lat_0, float Lon_0)
+void UCustomFileDownloader::ConvertOSMInOpenDrive(
+    FString FilePath,
+    float Lat_0, float Lon_0,
+    const FOpenDriveFileGenerationParameters& OpenDriveGenParams)
 {
   IPlatformFile &FileManager = FPlatformFileManager::Get().GetPlatformFile();
-
-  osm2odr::OSM2ODRSettings Settings;
-  Settings.proj_string += " +lat_0=" + std::to_string(Lat_0) + " +lon_0=" + std::to_string(Lon_0);
-  Settings.center_map = false;
-  std::string OpenDriveFile;
 
   FString FileContent;
   // Always first check if the file that you want to manipulate exist.
   if (FileManager.FileExists(*FilePath))
   {
     // We use the LoadFileToString to load the file into
-    if (FFileHelper::LoadFileToString(FileContent, *FilePath, FFileHelper::EHashOptions::None))
+    if (!FFileHelper::LoadFileToString(FileContent, *FilePath, FFileHelper::EHashOptions::None))
     {
-      UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("FileManipulation: Text From File: %s"), *FilePath);
-    }
-    else
-    {
-      UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("FileManipulation: Did not load text from file"));
+      UE_LOG(LogCarlaDigitalTwinsTool, Warning, TEXT("FileManipulation: Did not load text from \"%s\""), *FilePath);
     }
   }
   else
   {
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("File: %s does not exist"), *FilePath);
+    UE_LOG(LogCarlaDigitalTwinsTool, Warning, TEXT("File: \"%s\" does not exist"), *FilePath);
     return;
   }
+
+  std::string OpenDriveFile;
+
+  osm2odr::OSM2ODRSettings Settings;
+  Settings.default_sidewalk_width = OpenDriveGenParams.DefaultSidewalkWidth;
+  Settings.default_lane_width = OpenDriveGenParams.DefaultLaneWidth;
+  Settings.elevation_layer_height = OpenDriveGenParams.DefaultOSMLayerHeight;
+  Settings.proj_string += " +lat_0=" + std::to_string(Lat_0) + " +lon_0=" + std::to_string(Lon_0);
+  Settings.center_map = false;
 
   try
   {
@@ -59,11 +63,11 @@ void UCustomFileDownloader::ConvertOSMInOpenDrive(FString FilePath, float Lat_0,
 
   if (FFileHelper::SaveStringToFile(FString(OpenDriveFile.c_str()), *FilePath))
   {
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("FileManipulation: Successfully Written: \"%s\" to the text file"), *FilePath);
+    UE_LOG(LogCarlaDigitalTwinsTool, Display, TEXT("FileManipulation: Successfully Written: \"%s\" to the text file"), *FilePath);
   }
   else
   {
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("FileManipulation: Failed to write FString to file."));
+    UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("FileManipulation: Failed to write FString to file."));
   }
 }
 
