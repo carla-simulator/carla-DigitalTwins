@@ -2,6 +2,9 @@
 #include "Misc/FileHelper.h"
 #include "Engine/Engine.h"
 #include "Generation/MapGenFunctionLibrary.h"
+#include "Misc/Paths.h"
+#include "Json.h"
+#include "JsonUtilities.h"
 
 TArray<FVector2D> UGeometryImporter::ReadCSVCoordinates(FString Path, FVector2D OriginGeoCoordinates)
 {
@@ -143,5 +146,63 @@ TArray<USplineComponent*> UGeometryImporter::ImportGeoJsonPolygonsToSplines(UWor
         i++;
     }
 
+    return CreatedSplines;
+}
+
+TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(UWorld* World, const FString& JsonFilePath)
+{
+    TArray<USplineComponent*> CreatedSplines;
+
+    FString JsonString;
+    if (!FFileHelper::LoadFileToString(JsonString, *JsonFilePath))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load JSON from: %s"), *JsonFilePath);
+        return CreatedSplines;
+    }
+
+    TSharedPtr<FJsonValue> RootValue;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+    if (!FJsonSerializer::Deserialize(Reader, RootValue) || !RootValue.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON"));
+        return CreatedSplines;
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* ContourArray;
+    if (!RootValue->TryGetArray(ContourArray)) return CreatedSplines;
+
+    float Scale = 1.0f;
+    float ZOffset = 0.0f;
+
+    for (int32 ContourIdx = 0; ContourIdx < ContourArray->Num(); ++ContourIdx)
+    {
+        const TArray<TSharedPtr<FJsonValue>>* PointList;
+        if (!(*ContourArray)[ContourIdx]->TryGetArray(PointList)) continue;
+
+        TArray<FVector> Points;
+
+        for (const TSharedPtr<FJsonValue>& PointVal : *PointList)
+        {
+            const TArray<TSharedPtr<FJsonValue>>* XY;
+            if (PointVal->TryGetArray(XY) && XY->Num() == 2)
+            {
+                double X = 0.0, Y = 0.0;
+                if ((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y))
+                {
+                    // FVector P(X * Scale, Y * Scale, ZOffset);
+                    // Temporary fix to rotated splines
+                    FVector P(-Y * Scale, X * Scale, ZOffset);
+                    Points.Add(P);
+                }
+            }
+        }
+
+        FString Name = FString::Printf(TEXT("Spline_%d"), ContourIdx);
+        USplineComponent* Spline = CreateSpline(World, Points, Name);
+        if (Spline)
+        {
+            CreatedSplines.Add(Spline);
+        }
+    }
     return CreatedSplines;
 }

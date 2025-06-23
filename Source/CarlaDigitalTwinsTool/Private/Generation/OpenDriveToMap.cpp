@@ -97,9 +97,8 @@
 #include "Online/CustomFileDownloader.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
-
-
-
+// #include "Utils/GoogleStreetViewManager.h"
+#include "Utils/GeometryImporter.h"
 struct FTerrainMeshData
 {
   int32 MeshIndex;
@@ -1452,6 +1451,10 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     Task.Wait();
 
     RunPythonRoadEdges();
+
+    FString JsonPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
+    TArray<USplineComponent*> RoadSplines = UGeometryImporter::CreateSplinesFromJson(World, JsonPath);
+    UE_LOG(LogTemp, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
     return nullptr;
 }
