@@ -670,7 +670,7 @@ TArray<AActor*> UOpenDriveToMap::GenerateMiscActors(float Offset, FVector MinLoc
   for (auto& cl : Locations)
   {
     const FVector scale{ 1.0f, 1.0f, 1.0f };
-    cl.first.location.z = GetHeight(cl.first.location.x, cl.first.location.y) + 0.3f;
+    cl.first.location.z = GetHeight(cl.first.location.x, cl.first.location.y) / 100.0f + 0.3f;
     FTransform NewTransform ( FRotator(cl.first.rotation), FVector(cl.first.location), scale );
 
     NewTransform = GetSnappedPosition(NewTransform);
@@ -757,7 +757,7 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
         for (auto& Vertex : Vertices)
         {
           FVector FV = Vertex.ToFVector();
-          Vertex.z += GetHeight(Vertex.x, Vertex.y, DistanceToLaneBorder(ParamCarlaMap, FV) > 65.0f);
+          Vertex.z += GetHeight(Vertex.x * 100.0f, Vertex.y * 100.0f, DistanceToLaneBorder(ParamCarlaMap, FV) > 65.0f) / 100.0f;
         }
 #if ENGINE_MAJOR_VERSION < 5
         carla::geom::Simplification Simplify(0.15);
@@ -768,7 +768,7 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
       {
         for (auto& Vertex : Vertices)
         {
-          Vertex.z += GetHeight(Vertex.x, Vertex.y, false) + 0.15f;
+          Vertex.z += (GetHeight(Vertex.x * 100.0f, Vertex.y * 100.0f, false) + 0.15f) / 100.0f;
         }
       }
 
@@ -894,7 +894,7 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
     for (auto& Vertex : Mesh->GetVertices())
     {
       FVector VertexFVector = Vertex.ToFVector();
-      Vertex.z += GetHeight(Vertex.x, Vertex.y, DistanceToLaneBorder(ParamCarlaMap,VertexFVector) > 65.0f ) + 0.0001f;
+      Vertex.z += GetHeight(Vertex.x * 100.0f, Vertex.y * 100.0f, DistanceToLaneBorder(ParamCarlaMap,VertexFVector) > 65.0f ) / 100.0f + 0.01f;
       MeshCentroid += Vertex.ToFVector();
     }
 
@@ -1034,8 +1034,8 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
     int32 TextureSizeY = HeightmapCopy->GetHeight();
 
     // Normalize world coordinates to [0, 1]
-    float NormalizedX = (PosX - WorldOriginPosition.X) / (WorldEndPosition.X - WorldOriginPosition.X) * 100.0f;
-    float NormalizedY = (PosY - WorldOriginPosition.Y) / (WorldEndPosition.Y - WorldOriginPosition.Y) * 100.0f;
+    float NormalizedX = (PosX - WorldOriginPosition.X) / (WorldEndPosition.X - WorldOriginPosition.X);
+    float NormalizedY = (PosY - WorldOriginPosition.Y) / (WorldEndPosition.Y - WorldOriginPosition.Y);
 
     NormalizedX = FMath::Clamp(NormalizedX, 0.0f, 1.0f);
     NormalizedY = FMath::Clamp(NormalizedY, 0.0f, 1.0f);
@@ -1044,45 +1044,19 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
     float TexX = NormalizedX * (TextureSizeX);
     float TexY = NormalizedY * (TextureSizeY);
 
-    int32 CenterX = FMath::RoundToInt(TexX);
-    int32 CenterY = FMath::RoundToInt(TexY);
-
-    float Total = 0.0f;
-    float Count = 0.0f;
-    int32 LoopSize = 5;
-    // Loop over LoopSizexLoopSize kernel
-    for (int32 OffsetY = -LoopSize; OffsetY <= LoopSize; ++OffsetY)
-    {
-        for (int32 OffsetX = -LoopSize; OffsetX <= LoopSize; ++OffsetX)
-        {
-            int32 SampleX = CenterX + OffsetX;
-            int32 SampleY = CenterY + OffsetY;
-
-            // Discard out-of-bounds
-            if (SampleX < 0 || SampleX >= TextureSizeX || SampleY < 0 || SampleY >= TextureSizeY)
-            {
-                continue;
-            }
-
-            int32 Index = SampleY * TextureSizeX + SampleX;
-            if (HeightmapPixels.IsValidIndex(Index))
-            {
-                uint16 PixelValue = HeightmapPixels[Index];
-                float Normalized = static_cast<float>(PixelValue) / 65535.0f;
-                Total += Normalized;
-                Count += 1.0f;
-            }
-        }
-    }
-
-    // Compute average if any valid pixels
-    float SmoothedValue = (Count > 0) ? Total / static_cast<float>(Count) : 0.0f;
-
+    float SmoothedValue = UMapGenFunctionLibrary::BicubicSampleG16(
+      HeightmapPixels,
+      TextureSizeX,
+      TextureSizeY,
+      TexX,
+      TexY
+    );
     // Convert to world height
     float LandscapeHeight = SmoothedValue * (MaxHeight - MinHeight) + MinHeight;
+
     if (bDrivingLane)
     {
-        return LandscapeHeight /*- carla::geom::deformation::GetBumpDeformation(PosX, PosY)*/;
+        return LandscapeHeight - carla::geom::deformation::GetBumpDeformation(PosX, PosY);
     }
     else
     {
@@ -1103,8 +1077,8 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
 
 FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin ){
   FTransform ToReturn = Origin;
-  FVector Start = Origin.GetLocation() + FVector( 0, 0, 10000);
-  FVector End = Origin.GetLocation() - FVector( 0, 0, 10000);
+  FVector Start = Origin.GetLocation() + FVector( 0, 0, 100000000);
+  FVector End = Origin.GetLocation() - FVector( 0, 0, 100000000);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
   CollisionQuery.bTraceComplex = true;
@@ -1140,11 +1114,11 @@ float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
     CollisionQuery,
     CollisionParams) )
   {
-    return ((HitResult.ImpactPoint.Z - GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true)) * 100.0f) - 10.0f;
+    return (HitResult.ImpactPoint.Z) - 50.0f;
   }
   
   // If no hit, return the height based on the origin coordinates
-  return GetHeight(Origin.X * 0.01f, Origin.Y * 0.01f, true) * 100.0f;
+  return GetHeight(Origin.X, Origin.Y, false);
 }
 
 float UOpenDriveToMap::DistanceToLaneBorder(

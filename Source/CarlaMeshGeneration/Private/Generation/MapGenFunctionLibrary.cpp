@@ -386,3 +386,32 @@ void UMapGenFunctionLibrary::SmoothVerticesDeep(
     Vertices = NewVertices;
   }
 }
+
+float UMapGenFunctionLibrary::BicubicSampleG16(const TArrayView64<const uint16>& Pixels, int Width, int Height, float X, float Y)
+{
+  int ix = FMath::FloorToInt(X);
+  int iy = FMath::FloorToInt(Y);
+  float fx = X - ix;
+  float fy = Y - iy;
+
+  float patch[4][4];
+
+  // Fetch surrounding 4x4 pixel values
+  for (int m = -1; m <= 2; ++m)
+  {
+      for (int n = -1; n <= 2; ++n)
+      {
+          uint16 val = GetPixelG16(Pixels, Width, Height, ix + n, iy + m);
+          patch[m + 1][n + 1] = val / 65535.0f;  // Normalize to [0,1]
+      }
+  }
+
+  float col[4];
+  for (int i = 0; i < 4; ++i)
+  {
+      col[i] = CubicHermite(patch[i][0], patch[i][1], patch[i][2], patch[i][3], fx);
+  }
+
+  float result = CubicHermite(col[0], col[1], col[2], col[3], fy);
+  return FMath::Clamp(result, 0.0f, 1.0f); // Final result in [0,1]
+}
