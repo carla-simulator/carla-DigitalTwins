@@ -1384,14 +1384,15 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         HiddenActors.Reserve(Actors.Num());
         for (auto& Actor : Actors)
         {
+            auto BoundingBox = Actor->GetComponentsBoundingBox();
+            Bounds += BoundingBox;
             auto Name = Actor->GetName();
             if (!Name.Contains("DrivingLane", ESearchCase::CaseSensitive))
             {
+                Actor->SetActorHiddenInGame(true);
                 HiddenActors.Add(Actor);
                 continue;
             }
-            auto BoundingBox = Actor->GetComponentsBoundingBox();
-            Bounds += BoundingBox;
         }
         HiddenActors.Shrink();
     }
