@@ -11,7 +11,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include <Carla/Road/RoadMap.h>
 #include <boost/optional.hpp>
-
+#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "OpenDriveToMap.generated.h"
 
 
@@ -131,6 +131,9 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultLandscapeMaterial;
+  
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
+  FOpenDriveFileGenerationParameters OpenDriveGenParams;
 
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceBetweenTrees = 50.0f;
