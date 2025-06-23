@@ -101,7 +101,12 @@ public:
   void UnloadWorldPartitionRegion(const FBox& RegionBox);
 
   UTexture2D* RenderRoadToTexture(UWorld* World);
+
+  UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   UTexture2D* RenderRoadToTexture(FString MapPath);
+
+  UFUNCTION(BlueprintCallable, Category = "Assets Placement")
+  void RunPythonRoadEdges();
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="File")
   FString FilePath;
@@ -117,6 +122,9 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D FinalGeoCoordinates;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+  FString PythonBinPath = "/usr/bin/python3";
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D OriginGeoCoordinates;

@@ -1460,6 +1460,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     Task.Wait();
 
+    RunPythonRoadEdges();
+
     return nullptr;
 }
 
@@ -1467,6 +1469,71 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(FString MapPath)
 {
     auto World = UEditorLoadingAndSavingUtils::LoadMap(MapPath);
     return RenderRoadToTexture(World);
+}
+
+void UOpenDriveToMap::RunPythonRoadEdges()
+{
+
+  UE_LOG(LogTemp, Log, TEXT("Running Python road edges extraction script..."));
+  
+  FString PythonExe = PythonBinPath;
+  FString PluginPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins"));
+  FString ScriptPath = PluginPath / TEXT("Content/Python/road_edge_detection.py");
+  // Hardcoded values for testing
+
+  FString Args;
+  Args += FString::Printf(TEXT("\"%s\" "), *ScriptPath);
+  Args += FString::Printf(TEXT("--plugin_path=\"%s\" "), *PluginPath);
+  Args += FString::Printf(TEXT("--lon_min=%.8f "), OriginGeoCoordinates.Y);
+  Args += FString::Printf(TEXT("--lat_min=%.8f "), OriginGeoCoordinates.X);
+  Args += FString::Printf(TEXT("--lon_max=%.8f "), FinalGeoCoordinates.Y);
+  Args += FString::Printf(TEXT("--lat_max=%.8f "), FinalGeoCoordinates.X);
+
+  // Create communication pipes
+  void* ReadPipe = nullptr;
+  void* WritePipe = nullptr;
+  FPlatformProcess::CreatePipe(ReadPipe, WritePipe);
+
+  // Launch process
+  FProcHandle ProcHandle = FPlatformProcess::CreateProc(
+      *PythonExe,
+      *Args,
+      true,   // bLaunchDetached
+      false,  // bLaunchHidden
+      false,  // bLaunchReallyHidden
+      nullptr,
+      0,
+      nullptr,
+      WritePipe,  // Pipe for stdout/stderr
+      WritePipe
+  );
+
+  if (!ProcHandle.IsValid())
+  {
+      UE_LOG(LogTemp, Error, TEXT("Failed to launch Python script."));
+      FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+      return;
+  }
+
+  // Read output
+  FString Output;
+  while (FPlatformProcess::IsProcRunning(ProcHandle))
+  {
+      FString NewOutput = FPlatformProcess::ReadPipe(ReadPipe);
+      Output += NewOutput;
+      FPlatformProcess::Sleep(0.01f);
+  }
+
+  // Read any remaining output
+  Output += FPlatformProcess::ReadPipe(ReadPipe);
+
+  // Clean up
+  FPlatformProcess::CloseProc(ProcHandle);
+  FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+
+  // Print result to Unreal log
+  UE_LOG(LogTemp, Display, TEXT("Python Output:\n%s"), *Output);
+
 }
 
 #endif
