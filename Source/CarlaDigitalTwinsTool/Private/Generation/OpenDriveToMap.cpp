@@ -1401,14 +1401,18 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     auto Center = Bounds.GetCenter();
     auto Extent = Bounds.GetExtent();
-    auto OrthoWidth = std::max(Extent.X, Extent.Y) * 2.0F;
+    auto ExtentMin = std::min(Extent.X, Extent.Y);
+    auto ExtentMax = std::max(Extent.X, Extent.Y);
+    auto OrthoWidth = ExtentMax * 2.0F;
     auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
     auto Rotation = FRotator(-90, 0, 0);
 
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
-    RenderTarget->InitAutoFormat(1920, 1920);
+    RenderTarget->InitAutoFormat(
+        (int32)((Extent.X / UE_CM_TO_M) / 2),
+        (int32)((Extent.Y / UE_CM_TO_M) / 2));
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
