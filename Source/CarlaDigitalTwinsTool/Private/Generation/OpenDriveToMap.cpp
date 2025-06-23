@@ -1386,7 +1386,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         {
             auto BoundingBox = Actor->GetComponentsBoundingBox();
             Bounds += BoundingBox;
-            auto Name = Actor->GetName();
+            auto Name = Actor->GetActorLabel();
             if (!Name.Contains("DrivingLane", ESearchCase::CaseSensitive))
             {
                 Actor->SetActorHiddenInGame(true);
