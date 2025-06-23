@@ -1418,7 +1418,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto SCC2D = Camera->GetCaptureComponent2D();
     SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
     SCC2D->OrthoWidth = OrthoWidth;
-    SCC2D->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+    SCC2D->CaptureSource = ESceneCaptureSource::SCS_BaseColor;
     SCC2D->bCaptureEveryFrame = false;
     SCC2D->bCaptureOnMovement = false;
     SCC2D->TextureTarget = RenderTarget;
