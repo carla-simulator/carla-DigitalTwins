@@ -1379,31 +1379,21 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     TArray<AActor*> HiddenActors;
     {
-        TSet<AActor*> MeshActorSet;
+        TArray<AActor*> Actors;
+        UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), Actors);
+        HiddenActors.Reserve(Actors.Num());
+        for (auto& Actor : Actors)
         {
-            TArray<AActor*> Actors;
-            UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), Actors);
-            for (auto& Actor : Actors)
+            auto Name = Actor->GetName();
+            if (!Name.Contains("DrivingLane", ESearchCase::CaseSensitive))
             {
-                auto BoundingBox = Actor->GetComponentsBoundingBox();
-                Bounds += BoundingBox;
-                MeshActorSet.Add(Actor);
+                HiddenActors.Add(Actor);
+                continue;
             }
+            auto BoundingBox = Actor->GetComponentsBoundingBox();
+            Bounds += BoundingBox;
         }
-        {
-            UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), HiddenActors);
-            for (int32 i = 0; i != HiddenActors.Num();)
-            {
-                auto Actor = HiddenActors[i];
-                if (MeshActorSet.Contains(Actor) || Actor->IsHidden())
-                {
-                    HiddenActors.RemoveAtSwap(i, EAllowShrinking::Yes);
-                    continue;
-                }
-                Actor->SetActorHiddenInGame(true);
-                ++i;
-            }
-        }
+        HiddenActors.Shrink();
     }
 
     auto Center = Bounds.GetCenter();
@@ -1427,7 +1417,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto SCC2D = Camera->GetCaptureComponent2D();
     SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
     SCC2D->OrthoWidth = OrthoWidth;
-    SCC2D->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+    SCC2D->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDRNoAlpha;
     SCC2D->bCaptureEveryFrame = false;
     SCC2D->bCaptureOnMovement = false;
     SCC2D->TextureTarget = RenderTarget;
