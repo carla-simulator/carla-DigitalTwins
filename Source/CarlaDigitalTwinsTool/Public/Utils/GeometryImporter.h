@@ -24,5 +24,5 @@ public:
     static TArray<USplineComponent*> ImportGeoJsonPolygonsToSplines(UWorld* World, const FString& GeoJsonFilePath, const FVector2D OriginGeoCoordinates);
 
     UFUNCTION(BlueprintCallable, Category = "GeometryImporter")
-    static TArray<USplineComponent*> CreateSplinesFromJson(UWorld* World, const FString& JsonFilePath);
+    static TArray<USplineComponent*> CreateSplinesFromJson(UWorld* World, const FString& JsonFilePath, FVector2D DisPerPixel);
 };

@@ -100,6 +100,7 @@ public:
   UFUNCTION(BlueprintCallable)
   void UnloadWorldPartitionRegion(const FBox& RegionBox);
 
+  UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   UTexture2D* RenderRoadToTexture(UWorld* World);
 
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
