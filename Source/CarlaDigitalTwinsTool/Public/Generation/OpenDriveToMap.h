@@ -103,7 +103,7 @@ public:
   UTexture2D* RenderRoadToTexture(UWorld* World);
 
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
-  void RunPythonRoadEdges();
+  void RunPythonRoadEdges(FVector2D Center, FVector2D Extent);
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="File")
   FString FilePath;

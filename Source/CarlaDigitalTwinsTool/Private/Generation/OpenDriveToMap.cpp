@@ -1439,12 +1439,13 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
 
     auto Shape = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
-    TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
+    auto ImageTask = MakeUnique<FImageWriteTask>();
     auto PixelData = MakeUnique<TImagePixelData<FColor>>(Shape);
     PixelData->Pixels = Pixels;
     ImageTask->PixelData = MoveTemp(PixelData);
 
-    FString ImagePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+    FString ImagePath = FPaths::ConvertRelativePathToFull(
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
     ImageTask->Filename = ImagePath;
     ImageTask->Format = EImageFormat::PNG;
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
@@ -1459,17 +1460,21 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     Task.Wait();
 
-    RunPythonRoadEdges();
+    RunPythonRoadEdges(
+        FVector2D(Center.X, Center.Y),
+        FVector2D(Extent.X, Extent.Y));
 
-    FString JsonPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
-    TArray<USplineComponent*> RoadSplines = UGeometryImporter::CreateSplinesFromJson(World, JsonPath);
+    auto JsonPath = FPaths::ConvertRelativePathToFull(
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
+    auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
+        World, JsonPath);
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
     Camera->Destroy();
     return nullptr;
 }
 
-void UOpenDriveToMap::RunPythonRoadEdges()
+void UOpenDriveToMap::RunPythonRoadEdges(FVector2D Center, FVector2D Extent)
 {
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Running Python road edges extraction script..."));
   
@@ -1480,10 +1485,10 @@ void UOpenDriveToMap::RunPythonRoadEdges()
   FString Args;
   Args += FString::Printf(TEXT("\"%s\" "), *ScriptPath);
   Args += FString::Printf(TEXT("--plugin_path=\"%s\" "), *PluginPath);
-  Args += FString::Printf(TEXT("--lon_min=%.8f "), OriginGeoCoordinates.Y);
-  Args += FString::Printf(TEXT("--lat_min=%.8f "), OriginGeoCoordinates.X);
-  Args += FString::Printf(TEXT("--lon_max=%.8f "), FinalGeoCoordinates.Y);
-  Args += FString::Printf(TEXT("--lat_max=%.8f "), FinalGeoCoordinates.X);
+  Args += FString::Printf(TEXT("--center_x=%.8f "), Center.X);
+  Args += FString::Printf(TEXT("--center_y=%.8f "), Center.Y);
+  Args += FString::Printf(TEXT("--extent_x=%.8f "), Extent.X);
+  Args += FString::Printf(TEXT("--extent_y=%.8f "), Extent.Y);
 
   void* ReadPipe = nullptr;
   void* WritePipe = nullptr;
