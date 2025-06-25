@@ -125,7 +125,6 @@ UOpenDriveToMap::UOpenDriveToMap()
 
 UOpenDriveToMap::~UOpenDriveToMap()
 {
-
 }
 
 FString LaneTypeToFString(carla::road::Lane::LaneType LaneType)
