@@ -1412,9 +1412,11 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
-    RenderTarget->InitAutoFormat(
-        (int32)((Extent.X * UE_CM_TO_M) / 2),
-        (int32)((Extent.Y * UE_CM_TO_M) / 2));
+    auto Extent2D = FVector2D(Extent.X, Extent.Y);
+    auto RenderTargetScale = UE_CM_TO_M / 2.0;
+    auto RenderTargetScaleInv = 1.0 / RenderTargetScale;
+    auto RenderTargetSize = Extent2D * RenderTargetScale;
+    RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
@@ -1446,6 +1448,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     FString ImagePath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+
     ImageTask->Filename = ImagePath;
     ImageTask->Format = EImageFormat::PNG;
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
@@ -1466,9 +1469,54 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
-    auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
-        World, JsonPath);
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
+    
+    TArray<USplineComponent*> CreatedSplines;
+
+    FString JsonString;
+    if (!FFileHelper::LoadFileToString(JsonString, *JsonPath))
+    {
+        UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to load JSON from: %s"), *JsonPath);
+        return;
+    }
+
+    TSharedPtr<FJsonValue> RootValue;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+    if (!FJsonSerializer::Deserialize(Reader, RootValue) || !RootValue.IsValid())
+    {
+        UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to parse JSON"));
+        return;
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* ContourArray;
+    if (!RootValue->TryGetArray(ContourArray))
+        return;
+
+    float Scale = 1.0f;
+
+    for (int32 ContourIdx = 0; ContourIdx < ContourArray->Num(); ++ContourIdx)
+    {
+        const TArray<TSharedPtr<FJsonValue>>* PointList;
+        if (!(*ContourArray)[ContourIdx]->TryGetArray(PointList))
+            continue;
+        TArray<FVector> Points;
+        for (auto& PointVal : *PointList)
+        {
+            const TArray<TSharedPtr<FJsonValue>>* XY;
+            if (!(PointVal->TryGetArray(XY) && XY->Num() == 2))
+                continue;
+            double X = 0.0, Y = 0.0;
+            if (!((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y)))
+                continue;
+            FVector P(-Y, X, 0.0);
+            P *= RenderTargetScaleInv;
+            Points.Add(P);
+        }
+        auto Spline = UGeometryImporter::CreateSpline(
+            World, Points, 
+            FString::Printf(TEXT("Spline_%d"), ContourIdx));
+        if (Spline)
+            CreatedSplines.Add(Spline);
+    }
 
     Camera->Destroy();
     return nullptr;
@@ -1485,10 +1533,6 @@ void UOpenDriveToMap::RunPythonRoadEdges(FVector2D Center, FVector2D Extent)
   FString Args;
   Args += FString::Printf(TEXT("\"%s\" "), *ScriptPath);
   Args += FString::Printf(TEXT("--plugin_path=\"%s\" "), *PluginPath);
-  Args += FString::Printf(TEXT("--center_x=%.8f "), Center.X);
-  Args += FString::Printf(TEXT("--center_y=%.8f "), Center.Y);
-  Args += FString::Printf(TEXT("--extent_x=%.8f "), Extent.X);
-  Args += FString::Printf(TEXT("--extent_y=%.8f "), Extent.Y);
 
   void* ReadPipe = nullptr;
   void* WritePipe = nullptr;
