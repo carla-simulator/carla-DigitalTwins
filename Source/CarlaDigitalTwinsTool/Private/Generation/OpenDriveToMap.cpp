@@ -1417,10 +1417,11 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
     auto Extent2D = FVector2D(Extent.X, Extent.Y);
-    auto RenderTargetScale = UE_CM_TO_M / 2.0;
-    auto RenderTargetScaleInv = 1.0 / RenderTargetScale;
+    auto RenderTargetScale = UE_CM_TO_M * 8;
     auto RenderTargetSize = Extent2D * RenderTargetScale;
-    RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
+    RenderTarget->InitAutoFormat(
+        (uint32)std::round(RenderTargetSize.X),
+        (uint32)std::round(RenderTargetSize.Y));
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
@@ -1471,10 +1472,9 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         FVector2D(Center.X, Center.Y),
         FVector2D(Extent.X, Extent.Y));
 
-    FVector2D DisPerPixel(Extent.X/RenderTarget->SizeX, Extent.Y/RenderTarget->SizeY);
+    FVector2D DistPerPixel(Extent.X / RenderTarget->SizeX, Extent.Y / RenderTarget->SizeY);
 
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DisPerPixel.X, DisPerPixel.Y);
-
+    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DistPerPixel.X, DistPerPixel.Y);
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
@@ -1482,8 +1482,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
         JsonPath,
-        DisPerPixel
-      );
+        DistPerPixel);
+
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
     Camera->Destroy();
