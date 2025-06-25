@@ -13,6 +13,7 @@
 #include "RenderingThread.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "PhysicsEngine/BodySetup.h"
 // Carla C++ headers
 
 // Carla plugin headers
@@ -161,7 +162,7 @@ UStaticMesh* UMapGenFunctionLibrary::CreateMesh(
   IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
   UStaticMesh::FBuildMeshDescriptionsParams Params;
-  Params.bBuildSimpleCollision = true;
+  Params.bBuildSimpleCollision = false;
 
   FString PackageName = UGenerationPathsHelper::GetMapContentDirectoryPath(MapName) + FolderName + "/" + MeshName.ToString();
 
@@ -185,11 +186,16 @@ UStaticMesh* UMapGenFunctionLibrary::CreateMesh(
     Mesh->GetStaticMaterials().Add(FStaticMaterial(MaterialInstance));
     Mesh->NaniteSettings.bEnabled = true;
     Mesh->BuildFromMeshDescriptions({ &Description }, Params);
+    // Ensure Mesh has a BodySetup
     Mesh->CreateBodySetup();
-#if ENGINE_MAJOR_VERSION < 5
-    Mesh->BodySetup->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
-    Mesh->BodySetup->CreatePhysicsMeshes();
-#endif
+    UBodySetup* BodySetup = Mesh->GetBodySetup();
+    if (BodySetup)
+    {
+        // Set to use complex as simple collision
+        BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+        BodySetup->InvalidatePhysicsData();
+        BodySetup->ClearPhysicsMeshes();
+    }
     // Build mesh from source
     Mesh->NeverStream = false;
     TArray<UObject*> CreatedAssets;
@@ -199,12 +205,15 @@ UStaticMesh* UMapGenFunctionLibrary::CreateMesh(
     FAssetRegistryModule::AssetCreated(Mesh);
     //UPackage::SavePackage(Package, Mesh, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *(MeshName.ToString()), GError, nullptr, true, true, SAVE_NoError);
 #if ENGINE_MAJOR_VERSION > 4
-
     TArray<UStaticMesh*> MeshToEnableNanite;
     MeshToEnableNanite.Add(Mesh);
     UStaticMesh::BatchBuild(MeshToEnableNanite);
 #endif
+    // Finalize mesh
+    Mesh->Build(false); // Rebuilds mesh data, optionally pass true to mark as async
+    Mesh->PostEditChange(); 
     Package->MarkPackageDirty();
+    Mesh->ComplexCollisionMesh = Mesh;
     return Mesh;
   }
   return nullptr;

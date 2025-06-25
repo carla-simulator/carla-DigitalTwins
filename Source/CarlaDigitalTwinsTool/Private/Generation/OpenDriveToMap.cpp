@@ -210,8 +210,6 @@ void UOpenDriveToMap::CreateMap()
 
 void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int NumberOfTerrainY, const float MeshGridResolution)
 {
-
-
   if (NumberOfTerrainX <= 0 || NumberOfTerrainY <= 0 || MeshGridResolution <= 0) return;
 
   float TileSizeX = TileSize / NumberOfTerrainX;
@@ -309,7 +307,17 @@ void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int Number
     if (!Actor) continue;
 
     UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+    
     MeshComp->SetStaticMesh(StaticMesh);
+
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    MeshComp->SetCollisionObjectType(ECC_WorldStatic);
+    MeshComp->SetCollisionResponseToAllChannels(ECR_Block);
+    MeshComp->SetMobility(EComponentMobility::Static);
+
+
+    MeshComp->SetGenerateOverlapEvents(true);
+    MeshComp->bReturnMaterialOnMove = true;
     Actor->SetActorLabel(FString::Printf(TEXT("LandscapeActor_%d%s"), MeshData.MeshIndex, *GetStringForCurrentTile()));
     Actor->Tags.Add("LandscapeToMove");
     MeshComp->CastShadow = false;
@@ -319,7 +327,13 @@ void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int Number
 #endif
     Landscapes.Add(Actor);
   }
-
+  UWorld* World = GEditor->GetEditorWorldContext().World();
+  if (World)
+  {
+    FString CurrentMapName = World->GetMapName();
+    CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
+    UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
+  }
 }
 
 void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Offset, const int TileSizeX, const int TileSizeY, const float MeshResolution)
@@ -395,6 +409,13 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
 
   UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedLandscapeMaterial, MapName, "Terrain", FName(TEXT("SM_LandscapeMesh" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() )));
   Mesh->SetStaticMesh(MeshToSet);
+  Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+  Mesh->SetCollisionObjectType(ECC_WorldStatic);
+  Mesh->SetCollisionResponseToAllChannels(ECR_Block);
+  Mesh->SetMobility(EComponentMobility::Static);
+  Mesh->SetGenerateOverlapEvents(true);
+  Mesh->bReturnMaterialOnMove = true;
+
   MeshActor->SetActorLabel("SM_LandscapeActor" + FString::FromInt(StaticMeshIndex) + GetStringForCurrentTile() );
   MeshActor->Tags.Add(FName("LandscapeToMove"));
 #if ENGINE_MAJOR_VERSION > 4
@@ -670,7 +691,7 @@ TArray<AActor*> UOpenDriveToMap::GenerateMiscActors(float Offset, FVector MinLoc
   for (auto& cl : Locations)
   {
     const FVector scale{ 1.0f, 1.0f, 1.0f };
-    cl.first.location.z = GetHeight(cl.first.location.x, cl.first.location.y) / 100.0f + 0.3f;
+    cl.first.location.z = GetHeight(cl.first.location.x, cl.first.location.y) / 100.0f;
     FTransform NewTransform ( FRotator(cl.first.rotation), FVector(cl.first.location), scale );
 
     NewTransform = GetSnappedPosition(NewTransform);
@@ -812,7 +833,14 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
     AStaticMeshActor* TempActor = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>();
     UStaticMeshComponent* StaticMeshComponent = TempActor->GetStaticMeshComponent();
     TempActor->SetActorLabel(FString("SM_Lane_") + FString::FromInt(Index));
+
     StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    StaticMeshComponent->SetCollisionObjectType(ECC_WorldStatic);
+    StaticMeshComponent->SetCollisionResponseToAllChannels(ECR_Block);
+    StaticMeshComponent->SetMobility(EComponentMobility::Static);
+
+    StaticMeshComponent->SetGenerateOverlapEvents(true);
+    StaticMeshComponent->bReturnMaterialOnMove = true;
 
     if (LaneType == carla::road::Lane::LaneType::Driving && DefaultRoadMaterial)
     {
@@ -862,6 +890,14 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
 
   end = FPlatformTime::Seconds();
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Mesh spawnning and translation code executed in %f seconds."), end - start);
+
+  UWorld* World = GEditor->GetEditorWorldContext().World();
+  if (World)
+  {
+    FString CurrentMapName = World->GetMapName();
+    CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
+    UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
+  }
 }
 
 
@@ -963,6 +999,7 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
 
     UStaticMesh* MeshToSet = UMapGenFunctionLibrary::CreateMesh(MeshData,  Tangents, DuplicatedLandscapeMaterial, MapName, "LaneMark", FName(TEXT("SM_LaneMarkMesh" + FString::FromInt(meshindex) + GetStringForCurrentTile() )));
     StaticMeshComponent->SetStaticMesh(MeshToSet);
+    
     TempActor->SetActorLocation(MeshCentroid * 100);
     TempActor->Tags.Add(*FString(lanemarkinfo[index].c_str()));
     TempActor->Tags.Add(FName("RoadLane"));
@@ -974,7 +1011,13 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
     meshindex++;
     TempActor->SetActorEnableCollision(false);
     StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+  }
+  UWorld* World = GEditor->GetEditorWorldContext().World();
+  if (World)
+  {
+    FString CurrentMapName = World->GetMapName();
+    CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
+    UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
   }
 }
 
@@ -1010,7 +1053,7 @@ void UOpenDriveToMap::GenerateTreePositions( const boost::optional<carla::road::
   for (auto &cl : Locations)
   {
     const FVector scale{ 1.0f, 1.0f, 1.0f };
-    cl.first.location.z  = GetHeight(cl.first.location.x, cl.first.location.y) + 0.3f;
+    cl.first.location.z  = GetHeight(cl.first.location.x, cl.first.location.y) / 100.0f;
     FTransform NewTransform ( FRotator(cl.first.rotation), FVector(cl.first.location), scale );
     NewTransform = GetSnappedPosition(NewTransform);
 
@@ -1075,10 +1118,11 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
   }
 }
 
-FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin ){
+FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin )
+{
   FTransform ToReturn = Origin;
-  FVector Start = Origin.GetLocation() + FVector( 0, 0, 100000000);
-  FVector End = Origin.GetLocation() - FVector( 0, 0, 100000000);
+  FVector Start = Origin.GetLocation() - FVector( 0, 0, MinHeight * 1.1);
+  FVector End = Origin.GetLocation() + FVector( 0, 0, MaxHeight * 1.1);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
   CollisionQuery.bTraceComplex = true;
@@ -1099,8 +1143,8 @@ FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin ){
 }
 
 float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
-  FVector Start = Origin - FVector( 0, 0, 10000000000);
-  FVector End = Origin + FVector( 0, 0, 10000000000);
+  FVector Start = Origin - FVector( 0, 0, MinHeight * 1.1);
+  FVector End = Origin + FVector( 0, 0, MaxHeight * 1.1);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
   CollisionQuery.AddIgnoredActors(Landscapes);
@@ -1114,11 +1158,11 @@ float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
     CollisionQuery,
     CollisionParams) )
   {
-    return (HitResult.ImpactPoint.Z) - 50.0f;
+    return (HitResult.Location.Z) - 100.0f;
   }
   
   // If no hit, return the height based on the origin coordinates
-  return GetHeight(Origin.X, Origin.Y, false);
+  return GetHeight(Origin.X, Origin.Y, false) - 2.0f;
 }
 
 float UOpenDriveToMap::DistanceToLaneBorder(
