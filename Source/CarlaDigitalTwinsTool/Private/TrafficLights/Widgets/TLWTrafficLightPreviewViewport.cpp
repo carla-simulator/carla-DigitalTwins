@@ -1,6 +1,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "TrafficLights/TLMeshFactory.h"
 #include "UObject/UObjectGlobals.h"
 
 #include "TrafficLights/TLHead.h"
@@ -9,8 +10,9 @@
 #include "TrafficLights/Widgets/TLWTrafficLightPreviewViewport.h"
 
 void STrafficLightPreviewViewport::Construct(const FArguments &InArgs) {
-  LoadLightTypeDataTable();
-  LoadModulesDataTable();
+  LightTypesTable = FTLMeshFactory::GetLightTypeMeshTable();
+  ModulesTable = FTLMeshFactory::GetModuleMeshTable();
+  PolesTable = FTLMeshFactory::GetPoleMeshTable();
 
   PreviewScene = MakeUnique<FPreviewScene>(FPreviewScene::ConstructionValues());
 
@@ -35,26 +37,6 @@ void STrafficLightPreviewViewport::Construct(const FArguments &InArgs) {
   ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
 
   ChildSlot[ViewportWidget.ToSharedRef()];
-}
-
-void STrafficLightPreviewViewport::LoadLightTypeDataTable() {
-  if (LightTypesTable == nullptr) {
-    LightTypesTable = LoadObject<UDataTable>(
-        nullptr, TEXT("/Game/Carla/DataTables/LightTypes.LightTypes"));
-  }
-  if (LightTypesTable == nullptr) {
-    UE_LOG(LogTemp, Error, TEXT("Failed to load LightTypes data table"));
-  }
-}
-
-void STrafficLightPreviewViewport::LoadModulesDataTable() {
-  if (ModulesTable == nullptr) {
-    ModulesTable = LoadObject<UDataTable>(
-        nullptr, TEXT("/Game/Carla/DataTables/Modules.Modules"));
-  }
-  if (ModulesTable == nullptr) {
-    UE_LOG(LogTemp, Error, TEXT("Failed to load LightTypes data table"));
-  }
 }
 
 STrafficLightPreviewViewport::~STrafficLightPreviewViewport() {

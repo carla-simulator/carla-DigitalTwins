@@ -3,6 +3,7 @@
 #include "Misc/AssertionMacros.h"
 #include "Widgets/Colors/SColorPicker.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Input/SSlider.h"
@@ -12,8 +13,8 @@
 #include "Widgets/Layout/SSplitter.h"
 #include "Widgets/Text/STextBlock.h"
 
-#include "TrafficLights/TLMaterialFactory.h"
 #include "TrafficLights/TLLightTypeDataTable.h"
+#include "TrafficLights/TLMaterialFactory.h"
 #include "TrafficLights/TLMeshFactory.h"
 #include "TrafficLights/Widgets/TLWTrafficLightToolWidget.h"
 

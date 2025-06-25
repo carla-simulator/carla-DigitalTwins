@@ -6,14 +6,14 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Widgets/SCompoundWidget.h"
-#include "PreviewScene.h"
-#include "EditorViewportClient.h"
-#include "Slate/SceneViewport.h"
-#include "Widgets/SViewport.h"
-#include "Engine/DataTable.h"
 #include "Components/StaticMeshComponent.h"
+#include "CoreMinimal.h"
+#include "EditorViewportClient.h"
+#include "Engine/DataTable.h"
+#include "PreviewScene.h"
+#include "Slate/SceneViewport.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Widgets/SViewport.h"
 
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
@@ -37,6 +37,9 @@ public:
   UPROPERTY(EditAnywhere, Category = "Modules Data Table")
   UDataTable *ModulesTable{nullptr};
 
+  UPROPERTY(EditAnywhere, Category = "Poles Data Table")
+  UDataTable *PolesTable{nullptr};
+
   /** Head */
 public:
   /** Set the head style  */
@@ -51,8 +54,6 @@ public:
   void ResetFrame(const UStaticMeshComponent *Comp);
 
 private:
-  void LoadLightTypeDataTable();
-  void LoadModulesDataTable();
   FVector2D GetAtlasCoordsForLightType(ETLLightType LightType) const;
 
 private:

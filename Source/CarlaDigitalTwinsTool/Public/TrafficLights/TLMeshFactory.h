@@ -28,11 +28,12 @@ public:
   GetAllExtendibleMeshesForPole(const FTLPole &Pole);
   static TArray<UStaticMesh *> GetAllFinalMeshesForPole(const FTLPole &Pole);
 
-private:
   static UDataTable *GetModuleMeshTable();
+  static UDataTable *GetLightTypeMeshTable();
   static UDataTable *GetPoleMeshTable();
 
 private:
+  static UDataTable *LightTypeMeshTable;
   static UDataTable *ModuleMeshTable;
   static UDataTable *PoleMeshTable;
 };

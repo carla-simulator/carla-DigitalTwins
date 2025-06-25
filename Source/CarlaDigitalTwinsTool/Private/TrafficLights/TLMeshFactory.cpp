@@ -1,18 +1,28 @@
-#include "TrafficLights/TLStyle.h"
-#include "UObject/ConstructorHelpers.h"
-#include "UObject/SoftObjectPath.h"
-
 #include "TrafficLights/TLMeshFactory.h"
 #include "TrafficLights/TLModuleDataTable.h"
-#include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLPoleDataTable.h"
 
 UDataTable *FTLMeshFactory::ModuleMeshTable{nullptr};
 UDataTable *FTLMeshFactory::PoleMeshTable{nullptr};
+UDataTable *FTLMeshFactory::LightTypeMeshTable{nullptr};
+
+UDataTable *FTLMeshFactory::GetLightTypeMeshTable() {
+  if (!LightTypeMeshTable) {
+    constexpr TCHAR const *Path{
+        TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/"
+             "DataTables/LightTypes.LightTypes")};
+    UObject *Loaded =
+        StaticLoadObject(UDataTable::StaticClass(), nullptr, Path);
+    LightTypeMeshTable = Cast<UDataTable>(Loaded);
+  }
+  return LightTypeMeshTable;
+}
 
 UDataTable *FTLMeshFactory::GetModuleMeshTable() {
   if (!ModuleMeshTable) {
-    constexpr TCHAR const *Path{TEXT("/Game/Carla/DataTables/Modules.Modules")};
+    constexpr TCHAR const *Path{
+        TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/DataTables/"
+             "Modules.Modules")};
     UObject *Loaded =
         StaticLoadObject(UDataTable::StaticClass(), nullptr, Path);
     ModuleMeshTable = Cast<UDataTable>(Loaded);
@@ -22,7 +32,9 @@ UDataTable *FTLMeshFactory::GetModuleMeshTable() {
 
 UDataTable *FTLMeshFactory::GetPoleMeshTable() {
   if (!PoleMeshTable) {
-    constexpr TCHAR const *Path{TEXT("/Game/Carla/DataTables/Poles.Poles")};
+    constexpr TCHAR const *Path{
+        TEXT("/Game/Carla/Static/TrafficLight/TrafficLights2025/DataTables/"
+             "Poles.Poles")};
     UObject *Loaded =
         StaticLoadObject(UDataTable::StaticClass(), nullptr, Path);
     PoleMeshTable = Cast<UDataTable>(Loaded);
