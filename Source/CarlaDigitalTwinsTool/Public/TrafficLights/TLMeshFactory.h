@@ -9,31 +9,28 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Engine/StaticMesh.h"
-
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLPole.h"
 
-class FTLMeshFactory {
+class FTLMeshFactory
+{
 public:
-  static UStaticMesh *GetMeshForModule(const FTLHead &Head,
-                                       const FTLModule &Module);
-  static TArray<UStaticMesh *> GetAllMeshesForModule(const FTLHead &Head,
-                                                     const FTLModule &Module);
-  static UStaticMesh *GetBaseMeshForPole(const FTLPole &Pole);
-  static UStaticMesh *GetExtendibleMeshForPole(const FTLPole &Pole);
-  static UStaticMesh *GetFinalMeshForPole(const FTLPole &Pole);
-  static TArray<UStaticMesh *> GetAllBaseMeshesForPole(const FTLPole &Pole);
-  static TArray<UStaticMesh *>
-  GetAllExtendibleMeshesForPole(const FTLPole &Pole);
-  static TArray<UStaticMesh *> GetAllFinalMeshesForPole(const FTLPole &Pole);
+	static UStaticMesh* GetMeshForModule(const FTLHead& Head, const FTLModule& Module);
+	static TArray<UStaticMesh*> GetAllMeshesForModule(const FTLHead& Head, const FTLModule& Module);
+	static UStaticMesh* GetBaseMeshForPole(const FTLPole& Pole);
+	static UStaticMesh* GetExtendibleMeshForPole(const FTLPole& Pole);
+	static UStaticMesh* GetFinalMeshForPole(const FTLPole& Pole);
+	static TArray<UStaticMesh*> GetAllBaseMeshesForPole(const FTLPole& Pole);
+	static TArray<UStaticMesh*> GetAllExtendibleMeshesForPole(const FTLPole& Pole);
+	static TArray<UStaticMesh*> GetAllFinalMeshesForPole(const FTLPole& Pole);
 
-  static UDataTable *GetModuleMeshTable();
-  static UDataTable *GetLightTypeMeshTable();
-  static UDataTable *GetPoleMeshTable();
+	static UDataTable* GetModuleMeshTable();
+	static UDataTable* GetLightTypeMeshTable();
+	static UDataTable* GetPoleMeshTable();
 
 private:
-  static UDataTable *LightTypeMeshTable;
-  static UDataTable *ModuleMeshTable;
-  static UDataTable *PoleMeshTable;
+	static UDataTable* LightTypeMeshTable;
+	static UDataTable* ModuleMeshTable;
+	static UDataTable* PoleMeshTable;
 };

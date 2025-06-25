@@ -12,8 +12,9 @@
 #include "TLLightState.generated.h"
 
 UENUM(BlueprintType)
-enum class ETLLightState : uint8 {
-  Inactive UMETA(DisplayName = "Off"),
-  Solid UMETA(DisplayName = "On"),
-  Flashing UMETA(DisplayName = "Flashing")
+enum class ETLLightState : uint8
+{
+	Inactive UMETA(DisplayName = "Off"),
+	Solid UMETA(DisplayName = "On"),
+	Flashing UMETA(DisplayName = "Flashing")
 };

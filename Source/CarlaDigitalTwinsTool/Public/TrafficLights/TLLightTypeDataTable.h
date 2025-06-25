@@ -13,14 +13,13 @@
 #include "TLLightTypeDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLLightTypeRow : public FTableRowBase {
-  GENERATED_BODY()
+struct FTLLightTypeRow : public FTableRowBase
+{
+	GENERATED_BODY()
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly,
-            Category = "Traffic Light|LightType")
-  FIntPoint AtlasCoords;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|LightType")
+	FIntPoint AtlasCoords;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly,
-            Category = "Traffic Light|LightType")
-  FLinearColor Color;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|LightType")
+	FLinearColor Color;
 };

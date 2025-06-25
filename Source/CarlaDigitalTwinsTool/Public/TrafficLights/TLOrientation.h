@@ -12,7 +12,8 @@
 #include "TLOrientation.generated.h"
 
 UENUM(BlueprintType)
-enum class ETLOrientation : uint8 {
-  Vertical UMETA(DisplayName = "Vertical"),
-  Horizontal UMETA(DisplayName = "Horizontal")
+enum class ETLOrientation : uint8
+{
+	Vertical UMETA(DisplayName = "Vertical"),
+	Horizontal UMETA(DisplayName = "Horizontal")
 };

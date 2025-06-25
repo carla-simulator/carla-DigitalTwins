@@ -8,36 +8,36 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DataTable.h"
-#include "UObject/ObjectMacros.h"
-
 #include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLStyle.h"
+#include "UObject/ObjectMacros.h"
 
 #include "TLPoleDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLPoleRow : public FTableRowBase {
-  GENERATED_BODY()
+struct FTLPoleRow : public FTableRowBase
+{
+	GENERATED_BODY()
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
-  ETLStyle Style;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
+	ETLStyle Style;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  ETLOrientation Orientation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	ETLOrientation Orientation;
 
-  // In meters
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  float Height{5.0f};
+	// In meters
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	float Height{5.0f};
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  UStaticMesh *BaseMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	UStaticMesh* BaseMesh;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  UStaticMesh *ExtendibleMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	UStaticMesh* ExtendibleMesh;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  UStaticMesh *FinalMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	UStaticMesh* FinalMesh;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-  UStaticMesh *ConnectorMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
+	UStaticMesh* ConnectorMesh;
 };

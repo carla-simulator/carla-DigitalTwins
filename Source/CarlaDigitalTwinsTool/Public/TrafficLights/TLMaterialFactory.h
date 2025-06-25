@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include "UObject/Object.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/Object.h"
 
-class FMaterialFactory {
+class FMaterialFactory
+{
 public:
-  static UMaterialInstanceDynamic *GetLightMaterialInstance(UObject *Outer);
+	static UMaterialInstanceDynamic* GetLightMaterialInstance(UObject* Outer);
 };

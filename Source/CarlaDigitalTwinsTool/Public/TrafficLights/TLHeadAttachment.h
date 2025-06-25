@@ -12,9 +12,10 @@
 #include "TLHeadAttachment.generated.h"
 
 UENUM(BlueprintType)
-enum class ETLHeadAttachment : uint8 {
-  Ring UMETA(DisplayName = "Ring"),
-  SideArm UMETA(DisplayName = "Side Arm"),
-  StandardBracket UMETA(DisplayName = "Standard Bracket"),
-  StandardClamp UMETA(DisplayName = "Standard Clamp"),
+enum class ETLHeadAttachment : uint8
+{
+	Ring UMETA(DisplayName = "Ring"),
+	SideArm UMETA(DisplayName = "Side Arm"),
+	StandardBracket UMETA(DisplayName = "Standard Bracket"),
+	StandardClamp UMETA(DisplayName = "Standard Clamp"),
 };

@@ -11,9 +11,10 @@
 #include "TrafficLightActor.generated.h"
 
 UCLASS(BlueprintType)
-class CARLADIGITALTWINSTOOL_API ATrafficLightActor : public AActor {
-  GENERATED_BODY()
+class CARLADIGITALTWINSTOOL_API ATrafficLightActor : public AActor
+{
+	GENERATED_BODY()
 
 public:
-  ATrafficLightActor();
+	ATrafficLightActor();
 };
