@@ -7,7 +7,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Containers/Array.h"
 
 #include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLStyle.h"

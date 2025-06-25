@@ -158,8 +158,6 @@ public class CarlaDigitalTwinsTool : ModuleRules
         "StreetMapRuntime",
         "InputCore",
         "AppFramework",
-        "EditorStyle",
-        "PropertyEditor",
         "EngineSettings"
 				// ... add private dependencies that you statically link with here ...
 			}

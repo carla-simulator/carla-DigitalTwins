@@ -8,9 +8,10 @@
 
 #include "Engine/DataTable.h"
 #include "Engine/StaticMesh.h"
+#include "UObject/ObjectMacros.h"
+
 #include "TrafficLights/TLOrientation.h"
 #include "TrafficLights/TLStyle.h"
-#include "UObject/ObjectMacros.h"
 
 #include "TLModuleDataTable.generated.h"
 

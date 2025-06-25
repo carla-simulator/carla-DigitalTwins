@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Materials/MaterialInterface.h"
+#include "UObject/Object.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 class FMaterialFactory {
 public:

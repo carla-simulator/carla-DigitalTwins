@@ -6,11 +6,10 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Math/MathFwd.h"
 #include "Misc/Guid.h"
-#include "UObject/ObjectMacros.h"
 
 #include "TrafficLights/TLLightType.h"
 

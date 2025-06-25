@@ -1,15 +1,11 @@
-#include "Components/SceneComponent.h"
 #include "Containers/UnrealString.h"
 #include "Engine/StaticMeshSocket.h"
-#include "InputCoreTypes.h"
 #include "Misc/AssertionMacros.h"
-#include "Styling/AppStyle.h"
 #include "Widgets/Colors/SColorPicker.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Input/SSlider.h"
-#include "Widgets/Input/STextComboBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -17,6 +13,7 @@
 #include "Widgets/Text/STextBlock.h"
 
 #include "TrafficLights/TLMaterialFactory.h"
+#include "TrafficLights/TLLightTypeDataTable.h"
 #include "TrafficLights/TLMeshFactory.h"
 #include "TrafficLights/Widgets/TLWTrafficLightToolWidget.h"
 
