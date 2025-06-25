@@ -9,8 +9,7 @@
 #include "CoreMinimal.h"
 #include "Materials/MaterialInterface.h"
 
-class FMaterialFactory
-{
+class FMaterialFactory {
 public:
-    static UMaterialInstanceDynamic* GetLightMaterialInstance(UObject* Outer);
+  static UMaterialInstanceDynamic *GetLightMaterialInstance(UObject *Outer);
 };

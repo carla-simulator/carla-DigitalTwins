@@ -2,7 +2,7 @@
 #include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "TrafficLights/Widgets/STrafficLightToolWidget.h"
+#include "TrafficLights/Widgets/TLWTrafficLightToolWidget.h"
 
 #define LOCTEXT_NAMESPACE "FCarlaDigitalTwinsToolModule"
 
