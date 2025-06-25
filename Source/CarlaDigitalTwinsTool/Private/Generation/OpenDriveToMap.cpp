@@ -632,6 +632,8 @@ void UOpenDriveToMap::LoadMap()
     return;
   }
 
+  FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+
   FString FileContent;
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::LoadMap(): File to load %s"), *FilePath );
   FFileHelper::LoadFileToString(FileContent, *FilePath);
@@ -1411,8 +1413,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
     RenderTarget->InitAutoFormat(
-        (int32)((Extent.X / UE_CM_TO_M) / 2),
-        (int32)((Extent.Y / UE_CM_TO_M) / 2));
+        (int32)((Extent.X * UE_CM_TO_M) / 2),
+        (int32)((Extent.Y * UE_CM_TO_M) / 2));
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
@@ -1461,26 +1463,19 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     FString JsonPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
     TArray<USplineComponent*> RoadSplines = UGeometryImporter::CreateSplinesFromJson(World, JsonPath);
-    UE_LOG(LogTemp, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
+    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
+    Camera->Destroy();
     return nullptr;
-}
-
-UTexture2D* UOpenDriveToMap::RenderRoadToTexture(FString MapPath)
-{
-    auto World = UEditorLoadingAndSavingUtils::LoadMap(MapPath);
-    return RenderRoadToTexture(World);
 }
 
 void UOpenDriveToMap::RunPythonRoadEdges()
 {
-
-  UE_LOG(LogTemp, Log, TEXT("Running Python road edges extraction script..."));
+  UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Running Python road edges extraction script..."));
   
   FString PythonExe = PythonBinPath;
   FString PluginPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins"));
   FString ScriptPath = PluginPath / TEXT("Content/Python/road_edge_detection.py");
-  // Hardcoded values for testing
 
   FString Args;
   Args += FString::Printf(TEXT("\"%s\" "), *ScriptPath);
@@ -1490,12 +1485,10 @@ void UOpenDriveToMap::RunPythonRoadEdges()
   Args += FString::Printf(TEXT("--lon_max=%.8f "), FinalGeoCoordinates.Y);
   Args += FString::Printf(TEXT("--lat_max=%.8f "), FinalGeoCoordinates.X);
 
-  // Create communication pipes
   void* ReadPipe = nullptr;
   void* WritePipe = nullptr;
   FPlatformProcess::CreatePipe(ReadPipe, WritePipe);
 
-  // Launch process
   FProcHandle ProcHandle = FPlatformProcess::CreateProc(
       *PythonExe,
       *Args,
@@ -1511,12 +1504,11 @@ void UOpenDriveToMap::RunPythonRoadEdges()
 
   if (!ProcHandle.IsValid())
   {
-      UE_LOG(LogTemp, Error, TEXT("Failed to launch Python script."));
+      UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to launch Python script."));
       FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
       return;
   }
 
-  // Read output
   FString Output;
   while (FPlatformProcess::IsProcRunning(ProcHandle))
   {
@@ -1525,16 +1517,12 @@ void UOpenDriveToMap::RunPythonRoadEdges()
       FPlatformProcess::Sleep(0.01f);
   }
 
-  // Read any remaining output
   Output += FPlatformProcess::ReadPipe(ReadPipe);
 
-  // Clean up
   FPlatformProcess::CloseProc(ProcHandle);
   FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
 
-  // Print result to Unreal log
-  UE_LOG(LogTemp, Display, TEXT("Python Output:\n%s"), *Output);
-
+  UE_LOG(LogCarlaDigitalTwinsTool, Display, TEXT("Python Output:\n%s"), *Output);
 }
 
 #endif
