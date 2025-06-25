@@ -160,8 +160,9 @@ public class CarlaDigitalTwinsTool : ModuleRules
         "AppFramework",
         "EditorStyle",
         "PropertyEditor",
+        "EngineSettings"
 				// ... add private dependencies that you statically link with here ...
-          }
+			}
       );
 
         if (Target.Version.MajorVersion < 5)

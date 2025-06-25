@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
-#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "CustomFileDownloader.generated.h"
 /**
  *
@@ -52,7 +51,10 @@ public:
   UFUNCTION(BlueprintCallable)
   void StartDownload();
   UFUNCTION(BlueprintCallable)
-  void ConvertOSMInOpenDrive(FString FilePath, float Lat_0 = 0.0f, float Lon_0 = 0.0, FOpenDriveFileGenerationParameters OpenDriveGenParams  = FOpenDriveFileGenerationParameters());
+  void ConvertOSMInOpenDrive(
+	  FString FilePath,
+	  float Lat_0, float Lon_0,
+	  const FOpenDriveFileGenerationParameters& OpenDriveGenParams);
 
   FString ResultFileName;
 

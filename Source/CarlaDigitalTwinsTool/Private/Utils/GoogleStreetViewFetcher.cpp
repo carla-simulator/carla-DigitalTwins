@@ -40,7 +40,7 @@ void UGoogleStreetViewFetcher::RequestGoogleStreetViewImage()
     FVector2D latlon = UMapGenFunctionLibrary::InverseTransverseMercatorProjection( CameraLocation.X, CameraLocation.Y, OriginLat, OriginLon );
     double lat = latlon.X;
     double lon = latlon.Y;
-    int heading = static_cast<int>(FMath::Fmod(CameraRotation.Yaw + 90.0f + 360.0f, 360.0f));
+    int heading = static_cast<int>(FMath::Fmod(CameraRotation.Yaw + 360.0f, 360.0f));
 
     FString URL = FString::Printf(
         TEXT("https://maps.googleapis.com/maps/api/streetview?size=640x480&location=%.6f,%.6f&heading=%d&pitch=0&key=%s"),
@@ -91,7 +91,7 @@ void UGoogleStreetViewFetcher::OnStreetViewResponseReceived(FHttpRequestPtr Requ
 void UGoogleStreetViewFetcher::ApplyCameraTexture()
 {
     // Create a dynamic material instance from the post process material
-    UMaterialInterface* BasePPMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/CarlaDigitalTwinsTool/Static/Utils/M_GoogleStreetViewPost.M_GoogleStreetViewPost"));
+    UMaterialInterface* BasePPMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/CarlaDigitalTwinsTool/digitalTwins/Static/Utils/M_GoogleStreetViewPost.M_GoogleStreetViewPost"));
 
     if (!StreetViewPostProcessMaterial && BasePPMat)
     {

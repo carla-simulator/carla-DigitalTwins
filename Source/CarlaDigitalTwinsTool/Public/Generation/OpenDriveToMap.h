@@ -9,10 +9,9 @@
 #include "EditorUtilityActor.h"
 #include "EditorUtilityObject.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
-#include "Generation/OpenDriveFileGenerationParameters.h"
 #include <Carla/Road/RoadMap.h>
 #include <boost/optional.hpp>
-
+#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "OpenDriveToMap.generated.h"
 
 
@@ -113,10 +112,10 @@ public:
   FString LocalFilePath;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-  FVector2D OriginGeoCoordinates;
+  FVector2D FinalGeoCoordinates;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-  FVector2D FinalGeoCoordinates;
+  FVector2D OriginGeoCoordinates;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultRoadMaterial;
@@ -132,7 +131,7 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultLandscapeMaterial;
-
+  
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
   FOpenDriveFileGenerationParameters OpenDriveGenParams;
 
@@ -200,6 +199,8 @@ protected:
   UFUNCTION( BlueprintImplementableEvent )
   void DownloadFinished();
 
+  UFUNCTION( BlueprintImplementableEvent )
+  void InitializeBuildingsInBP();
 
   UFUNCTION( BlueprintImplementableEvent )
   void ExecuteTileCommandlet();
