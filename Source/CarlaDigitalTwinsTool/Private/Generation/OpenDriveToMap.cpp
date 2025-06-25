@@ -116,6 +116,11 @@ UOpenDriveToMap::UOpenDriveToMap()
   bRoadsFinished = false;
   bHasStarted = false;
   bMapLoaded = false;
+#ifdef _WIN32
+  PythonBinPath = TEXT("python");
+#else
+  PythonBinPath = TEXT("/usr/bin/python3");
+#endif
 }
 
 UOpenDriveToMap::~UOpenDriveToMap()

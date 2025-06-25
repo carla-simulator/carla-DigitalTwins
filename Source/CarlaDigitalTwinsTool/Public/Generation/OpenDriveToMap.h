@@ -122,7 +122,7 @@ public:
   FVector2D FinalGeoCoordinates;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-  FString PythonBinPath = "/usr/bin/python3";
+  FString PythonBinPath;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
   FVector2D OriginGeoCoordinates;
