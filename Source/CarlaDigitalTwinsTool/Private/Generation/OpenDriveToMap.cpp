@@ -1469,7 +1469,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     FVector2D DisPerPixel(Extent.X/RenderTarget->SizeX, Extent.Y/RenderTarget->SizeY);
 
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DistPerPixelX, DistPerPixelY);
+    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DisPerPixel.X, DisPerPixel.Y);
+
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
@@ -1477,7 +1478,7 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
         JsonPath,
-        DisPerPixel,
+        DisPerPixel
       );
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
