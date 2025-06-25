@@ -240,7 +240,7 @@ FReply STrafficLightToolWidget::OnAddModuleClicked(int32 PoleIndex,
       FTLMeshFactory::GetMeshForModule(Head.Data, NewEditorMod.Data);
   if (!NewEditorMod.Data.ModuleMesh) {
     UE_LOG(LogTemp, Error,
-           TEXT("OnAddModuleClicked: no se pudo cargar el mesh del módulo."));
+           TEXT("OnAddModuleClicked: failed to load the module."));
     return FReply::Handled();
   }
 

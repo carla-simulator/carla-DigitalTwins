@@ -132,7 +132,7 @@ FTLMeshFactory::GetAllBaseMeshesForPole(const FTLPole &Pole) {
     const FTLPoleRow *Row =
         Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllBaseMeshesForPole"));
     if (!Row) {
-      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: fila '%s' no encontrada"),
+      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"),
              *RowName.ToString());
       continue;
     }
@@ -159,7 +159,7 @@ FTLMeshFactory::GetAllExtendibleMeshesForPole(const FTLPole &Pole) {
     const FTLPoleRow *Row = Table->FindRow<FTLPoleRow>(
         RowName, TEXT("GetAllExtendibleMeshesForPole"));
     if (!Row) {
-      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: fila '%s' no encontrada"),
+      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"),
              *RowName.ToString());
       continue;
     }
@@ -186,7 +186,7 @@ FTLMeshFactory::GetAllFinalMeshesForPole(const FTLPole &Pole) {
     const FTLPoleRow *Row =
         Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllFinalMeshesForPole"));
     if (!Row) {
-      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: fila '%s' no encontrada"),
+      UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"),
              *RowName.ToString());
       continue;
     }
