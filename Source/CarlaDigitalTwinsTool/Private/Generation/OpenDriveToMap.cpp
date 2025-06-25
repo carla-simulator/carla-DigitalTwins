@@ -1470,54 +1470,6 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto JsonPath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
     
-    TArray<USplineComponent*> CreatedSplines;
-
-    FString JsonString;
-    if (!FFileHelper::LoadFileToString(JsonString, *JsonPath))
-    {
-        UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to load JSON from: %s"), *JsonPath);
-        return;
-    }
-
-    TSharedPtr<FJsonValue> RootValue;
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-    if (!FJsonSerializer::Deserialize(Reader, RootValue) || !RootValue.IsValid())
-    {
-        UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to parse JSON"));
-        return;
-    }
-
-    const TArray<TSharedPtr<FJsonValue>>* ContourArray;
-    if (!RootValue->TryGetArray(ContourArray))
-        return;
-
-    float Scale = 1.0f;
-
-    for (int32 ContourIdx = 0; ContourIdx < ContourArray->Num(); ++ContourIdx)
-    {
-        const TArray<TSharedPtr<FJsonValue>>* PointList;
-        if (!(*ContourArray)[ContourIdx]->TryGetArray(PointList))
-            continue;
-        TArray<FVector> Points;
-        for (auto& PointVal : *PointList)
-        {
-            const TArray<TSharedPtr<FJsonValue>>* XY;
-            if (!(PointVal->TryGetArray(XY) && XY->Num() == 2))
-                continue;
-            double X = 0.0, Y = 0.0;
-            if (!((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y)))
-                continue;
-            FVector P(-Y, X, 0.0);
-            P *= RenderTargetScaleInv;
-            Points.Add(P);
-        }
-        auto Spline = UGeometryImporter::CreateSpline(
-            World, Points, 
-            FString::Printf(TEXT("Spline_%d"), ContourIdx));
-        if (Spline)
-            CreatedSplines.Add(Spline);
-    }
-
     Camera->Destroy();
     return nullptr;
 }
