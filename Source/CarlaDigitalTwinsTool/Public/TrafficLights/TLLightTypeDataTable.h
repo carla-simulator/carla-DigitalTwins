@@ -6,18 +6,21 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Math/MathFwd.h"
+#include "UObject/ObjectMacros.h"
+
 #include "TLLightTypeDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLLightTypeRow : public FTableRowBase
-{
+struct FTLLightTypeRow : public FTableRowBase {
   GENERATED_BODY()
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|LightType")
+  UPROPERTY(EditAnywhere, BlueprintReadOnly,
+            Category = "Traffic Light|LightType")
   FIntPoint AtlasCoords;
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|LightType")
+  UPROPERTY(EditAnywhere, BlueprintReadOnly,
+            Category = "Traffic Light|LightType")
   FLinearColor Color;
 };

@@ -6,26 +6,27 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "TrafficLights/TLStyle.h"
+#include "Engine/StaticMesh.h"
 #include "TrafficLights/TLOrientation.h"
+#include "TrafficLights/TLStyle.h"
+#include "UObject/ObjectMacros.h"
+
 #include "TLModuleDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLModuleRow : public FTableRowBase
-{
-    GENERATED_BODY()
+struct FTLModuleRow : public FTableRowBase {
+  GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    ETLStyle Style;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Module")
+  ETLStyle Style;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    ETLOrientation Orientation;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Module")
+  ETLOrientation Orientation;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    bool bHasVisor;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Module")
+  bool bHasVisor;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Traffic Light|Module")
-    UStaticMesh* Mesh;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Module")
+  UStaticMesh *Mesh;
 };

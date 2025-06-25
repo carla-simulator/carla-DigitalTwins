@@ -13,42 +13,41 @@
 #include "TrafficLights/TLStyle.h"
 #include "TrafficLights/TLHeadAttachment.h"
 #include "TrafficLights/TLOrientation.h"
+
 #include "TLHead.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLHead
-{
-    GENERATED_BODY()
+struct FTLHead {
+  GENERATED_BODY()
 
-    /** Local transform relative to parent pole */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    FTransform Transform { FTransform::Identity };
+  /** Local transform relative to parent pole */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  FTransform Transform{FTransform::Identity};
 
-    /** Offset transform */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    FTransform Offset { FTransform::Identity };
+  /** Offset transform */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  FTransform Offset{FTransform::Identity};
 
-    /** Head style */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLStyle Style { ETLStyle::NorthAmerican };
+  /** Head style */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  ETLStyle Style{ETLStyle::NorthAmerican};
 
-    /** Attachment type */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLHeadAttachment Attachment { ETLHeadAttachment::Ring };
+  /** Attachment type */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  ETLHeadAttachment Attachment{ETLHeadAttachment::Ring};
 
-    /** Orientation of the head */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    ETLOrientation Orientation { ETLOrientation::Vertical };
+  /** Orientation of the head */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  ETLOrientation Orientation{ETLOrientation::Vertical};
 
-    //** Has backplate */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    bool bHasBackplate { false };
+  //** Has backplate */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  bool bHasBackplate{false};
 
-    /** Modules (one or more) visible on this head */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
-    TArray<FTLModule> Modules;
+  /** Modules (one or more) visible on this head */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+  TArray<FTLModule> Modules;
 
-    UPROPERTY(Transient)
-    FGuid HeadID { FGuid::NewGuid() };
-
+  UPROPERTY(Transient)
+  FGuid HeadID{FGuid::NewGuid()};
 };

@@ -6,13 +6,15 @@
 
 #pragma once
 
+#include "HAL/Platform.h"
+#include "UObject/ObjectMacros.h"
+
 #include "TLStyle.generated.h"
 
 UENUM(BlueprintType)
-enum class ETLStyle : uint8
-{
-    NorthAmerican   UMETA(DisplayName = "North American Standard"),
-    European        UMETA(DisplayName = "European Standard"),
-    Asian           UMETA(DisplayName = "Asian Standard"),
-    Custom          UMETA(DisplayName = "Custom"),
+enum class ETLStyle : uint8 {
+  NorthAmerican UMETA(DisplayName = "North American Standard"),
+  European UMETA(DisplayName = "European Standard"),
+  Asian UMETA(DisplayName = "Asian Standard"),
+  Custom UMETA(DisplayName = "Custom"),
 };
