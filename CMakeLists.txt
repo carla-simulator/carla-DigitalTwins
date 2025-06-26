@@ -111,7 +111,7 @@ find_package (
   REQUIRED
 )
 
-set (PROJ_VERSION 7.2.0)
+set (PROJ_VERSION 9.6.0)
 message (STATUS "Looking for PROJ")
 find_package (
   PROJ ${PROJ_VERSION}
@@ -119,7 +119,8 @@ find_package (
   REQUIRED
 )
 
-set (SUMO_BRANCH master)
+# set (SUMO_BRANCH master)
+set (SUMO_COMMIT 1da3c07e39f3e2e0d97f8f709a7255a0df8c6200)
 message (STATUS "Looking for SUMO")
 find_package (
   SUMO
