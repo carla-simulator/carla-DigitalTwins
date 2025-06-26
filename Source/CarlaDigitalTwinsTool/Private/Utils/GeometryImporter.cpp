@@ -151,7 +151,11 @@ TArray<USplineComponent*> UGeometryImporter::ImportGeoJsonPolygonsToSplines(UWor
     return CreatedSplines;
 }
 
-TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(UWorld* World, const FString& JsonFilePath, FVector2D DisPerPixel)
+TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
+    UWorld* World, 
+    const FString& JsonFilePath,
+    FVector2D Min,
+    FVector2D Max)
 {
     TArray<USplineComponent*> CreatedSplines;
 
@@ -190,10 +194,9 @@ TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(UWorld* World
                 double X = 0.0, Y = 0.0;
                 if ((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y))
                 {
-                    // FVector P(X * Scale, Y * Scale, ZOffset);
-                    // Temporary fix to rotated splines
-                    FVector P(-Y * DisPerPixel.X, X * DisPerPixel.Y, ZOffset);
-                    Points.Add(P);
+                    auto P = Min + (Max - Min) * FVector2D(Y, X);
+                    P.X -= Min.X;
+                    Points.Add(FVector(-P.X, P.Y, ZOffset));
                 }
             }
         }

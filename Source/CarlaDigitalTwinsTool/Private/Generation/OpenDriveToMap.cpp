@@ -1410,8 +1410,6 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto ExtentMin = std::min(Extent.X, Extent.Y);
     auto ExtentMax = std::max(Extent.X, Extent.Y);
     auto OrthoWidth = ExtentMax * 2.0F;
-    auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
-    auto Rotation = FRotator(-90, 0, 0);
 
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
@@ -1437,6 +1435,10 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     SCC2D->bCaptureEveryFrame = false;
     SCC2D->bCaptureOnMovement = false;
     SCC2D->TextureTarget = RenderTarget;
+
+    auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
+    auto Rotation = Camera->GetActorRotation();
+    Rotation = FRotator(-90.0F, Rotation.Yaw, Rotation.Roll);
 
     Camera->SetActorLocation(Location);
     Camera->SetActorRotation(Rotation);
@@ -1482,7 +1484,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
         JsonPath,
-        DistPerPixel);
+        FVector2D(Bounds.Min.X, Bounds.Min.Y),
+        FVector2D(Bounds.Max.X, Bounds.Max.Y));
 
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
