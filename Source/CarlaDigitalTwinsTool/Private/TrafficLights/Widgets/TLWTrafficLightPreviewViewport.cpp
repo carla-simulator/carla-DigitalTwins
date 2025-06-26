@@ -267,10 +267,6 @@ void STrafficLightPreviewViewport::Rebuild(TArray<FTLPole>& Poles)
 	{
 		SceneViewport->Invalidate();
 	}
-	if (PoleBaseMeshComponents.Num() > 0)
-	{
-		ResetFrame(PoleBaseMeshComponents[0]);
-	}
 }
 
 void STrafficLightPreviewViewport::ResetFrame(const UStaticMeshComponent* Comp)
