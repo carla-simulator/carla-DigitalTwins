@@ -103,7 +103,7 @@ find_package (
   REQUIRED
 )
 
-set (XERCESC_VERSION 3.2.3)
+set (XERCESC_VERSION 3.3.0)
 message (STATUS "Looking for XercesC")
 find_package (
   XercesC ${XERCESC_VERSION}
