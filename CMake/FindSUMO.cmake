@@ -25,7 +25,7 @@ if (NOT ${SUMO_FOUND})
   if (NOT EXISTS ${THIRD_PARTY_ROOT_DIR}/sumo.zip)
     set (
       SUMO_DOWNLOAD_URL
-      https://github.com/carla-simulator/sumo/archive/refs/heads/${SUMO_BRANCH}.zip
+      https://github.com/carla-simulator/sumo/archive/${SUMO_COMMIT}.zip
     )
     message (STATUS "Downloading SUMO from ${SUMO_DOWNLOAD_URL}")
     file (
@@ -48,7 +48,7 @@ if (NOT ${SUMO_FOUND})
     message (STATUS "Renaming extracted SUMO directories.")
     file (
       RENAME
-        ${THIRD_PARTY_ROOT_DIR}/sumo-${SUMO_BRANCH_CLEAN}
+        ${THIRD_PARTY_ROOT_DIR}/sumo-${SUMO_COMMIT}
         ${SUMO_SOURCE_DIR}
     )
   endif ()
