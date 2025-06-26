@@ -194,9 +194,9 @@ TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
                 double X = 0.0, Y = 0.0;
                 if ((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y))
                 {
-                    auto P = Min + (Max - Min) * FVector2D(Y, X);
-                    P.X -= Min.X;
-                    Points.Add(FVector(-P.X, P.Y, ZOffset));
+                    auto P = Min + (Max - Min) * FVector2D(X, Y);
+                    // P.X = -P.X + (Max.X - Min.X);
+                    Points.Add(FVector(-P.Y, P.X, ZOffset));
                 }
             }
         }
