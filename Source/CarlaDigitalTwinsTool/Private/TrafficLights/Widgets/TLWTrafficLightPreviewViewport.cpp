@@ -2,11 +2,13 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Logging/LogMacros.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLLightTypeDataTable.h"
 #include "TrafficLights/TLMaterialFactory.h"
 #include "TrafficLights/TLMeshFactory.h"
+#include "TrafficLights/TLPole.h"
 #include "UObject/UObjectGlobals.h"
 
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
@@ -14,6 +16,19 @@ void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
 	LightTypesTable = FTLMeshFactory::GetLightTypeMeshTable();
 	ModulesTable = FTLMeshFactory::GetModuleMeshTable();
 	PolesTable = FTLMeshFactory::GetPoleMeshTable();
+
+	if (!IsValid(LightTypesTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("LightTypesTable is not valid"));
+	}
+	if (!IsValid(ModulesTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("ModulesTable is not valid"));
+	}
+	if (!IsValid(PolesTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("PolesTable is not valid"));
+	}
 
 	PreviewScene = MakeUnique<FPreviewScene>(FPreviewScene::ConstructionValues());
 
@@ -46,10 +61,6 @@ STrafficLightPreviewViewport::~STrafficLightPreviewViewport()
 	}
 }
 
-void STrafficLightPreviewViewport::SetHeadStyle(int32 Index, ETLStyle Style)
-{
-}
-
 FVector2D STrafficLightPreviewViewport::GetAtlasCoordsForLightType(ETLLightType LightType) const
 {
 	if (LightTypesTable == nullptr)
@@ -74,9 +85,9 @@ FVector2D STrafficLightPreviewViewport::GetAtlasCoordsForLightType(ETLLightType 
 	return FVector2D::ZeroVector;
 }
 
-UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData)
+UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLPole& Pole, const FTLHead& Head, FTLModule& ModuleData)
 {
-	const FTransform ModuleWorldTransform{ModuleData.Transform * Head.Transform * ModuleData.Offset};
+	const FTransform ModuleWorldTransform{ModuleData.Transform * Head.Transform * Pole.Transform * ModuleData.Offset};
 
 	UWorld* World{PreviewScene->GetWorld()};
 	UObject* LevelOuter{World->PersistentLevel};
@@ -109,6 +120,63 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLHead&
 	return Comp;
 }
 
+UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleBaseMesh(const FTLPole& Pole)
+{
+	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
+
+	UWorld* World{PreviewScene->GetWorld()};
+	UObject* LevelOuter{World->PersistentLevel};
+	UStaticMeshComponent* Comp{NewObject<UStaticMeshComponent>(LevelOuter, NAME_None, RF_Transient)};
+	if (!Comp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create StaticMeshComponent for pole"));
+		return nullptr;
+	}
+	PreviewScene->AddComponent(Comp, PoleWorldTransform);
+	Comp->SetStaticMesh(Pole.BasePoleMesh);
+	PoleBaseMeshComponents.Add(Comp);
+
+	return Comp;
+}
+
+UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleExtensibleMesh(const FTLPole& Pole)
+{
+	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
+
+	UWorld* World{PreviewScene->GetWorld()};
+	UObject* LevelOuter{World->PersistentLevel};
+	UStaticMeshComponent* Comp{NewObject<UStaticMeshComponent>(LevelOuter, NAME_None, RF_Transient)};
+	if (!Comp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create StaticMeshComponent for pole"));
+		return nullptr;
+	}
+	PreviewScene->AddComponent(Comp, PoleWorldTransform);
+	Comp->SetStaticMesh(Pole.ExtendiblePoleMesh);
+	PoleExtensibleMeshComponents.Add(Comp);
+
+	return Comp;
+}
+
+UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleFinalMesh(const FTLPole& Pole)
+{
+	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
+
+	UWorld* World{PreviewScene->GetWorld()};
+	UObject* LevelOuter{World->PersistentLevel};
+	UStaticMeshComponent* Comp{NewObject<UStaticMeshComponent>(LevelOuter, NAME_None, RF_Transient)};
+	if (!Comp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create StaticMeshComponent for pole"));
+		return nullptr;
+	}
+	PreviewScene->AddComponent(Comp, PoleWorldTransform);
+	Comp->SetStaticMesh(Pole.FinalPoleMesh);
+	PoleFinalMeshComponents.Add(Comp);
+
+	return Comp;
+}
+
 void STrafficLightPreviewViewport::ClearModuleMeshes()
 {
 	for (UStaticMeshComponent* Comp : ModuleMeshComponents)
@@ -126,16 +194,72 @@ void STrafficLightPreviewViewport::ClearModuleMeshes()
 	ModuleMeshComponents.Empty();
 }
 
-void STrafficLightPreviewViewport::Rebuild(const TArray<FTLPole*>& Poles)
+void STrafficLightPreviewViewport::ClearPoleMeshes()
+{
+	for (UStaticMeshComponent* Comp : PoleBaseMeshComponents)
+	{
+		if (Comp)
+		{
+			PreviewScene->RemoveComponent(Comp);
+			if (Comp->IsRegistered())
+			{
+				Comp->UnregisterComponent();
+			}
+			Comp->DestroyComponent();
+		}
+	}
+	for (UStaticMeshComponent* Comp : PoleExtensibleMeshComponents)
+	{
+		if (Comp)
+		{
+			PreviewScene->RemoveComponent(Comp);
+			if (Comp->IsRegistered())
+			{
+				Comp->UnregisterComponent();
+			}
+			Comp->DestroyComponent();
+		}
+	}
+	for (UStaticMeshComponent* Comp : PoleFinalMeshComponents)
+	{
+		if (Comp)
+		{
+			PreviewScene->RemoveComponent(Comp);
+			if (Comp->IsRegistered())
+			{
+				Comp->UnregisterComponent();
+			}
+			Comp->DestroyComponent();
+		}
+	}
+	PoleBaseMeshComponents.Empty();
+	PoleExtensibleMeshComponents.Empty();
+	PoleFinalMeshComponents.Empty();
+}
+
+void STrafficLightPreviewViewport::Rebuild(TArray<FTLPole>& Poles)
 {
 	ClearModuleMeshes();
-	for (FTLPole* Pole : Poles)
+	ClearPoleMeshes();
+	for (FTLPole& Pole : Poles)
 	{
-		for (FTLHead& Head : Pole->Heads)
+		if (Pole.BasePoleMesh)
+		{
+			PoleBaseMeshComponents.Add(AddPoleBaseMesh(Pole));
+		}
+		if (Pole.ExtendiblePoleMesh)
+		{
+			PoleExtensibleMeshComponents.Add(AddPoleExtensibleMesh(Pole));
+		}
+		if (Pole.FinalPoleMesh)
+		{
+			PoleFinalMeshComponents.Add(AddPoleFinalMesh(Pole));
+		}
+		for (FTLHead& Head : Pole.Heads)
 		{
 			for (FTLModule& Module : Head.Modules)
 			{
-				Module.ModuleMeshComponent = AddModuleMesh(Head, Module);
+				Module.ModuleMeshComponent = AddModuleMesh(Pole, Head, Module);
 			}
 		}
 	}
@@ -143,9 +267,9 @@ void STrafficLightPreviewViewport::Rebuild(const TArray<FTLPole*>& Poles)
 	{
 		SceneViewport->Invalidate();
 	}
-	if (ModuleMeshComponents.Num() > 0)
+	if (PoleBaseMeshComponents.Num() > 0)
 	{
-		ResetFrame(ModuleMeshComponents[0]);
+		ResetFrame(PoleBaseMeshComponents[0]);
 	}
 }
 

@@ -10,13 +10,13 @@
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLHeadAttachment.h"
 #include "TrafficLights/TLOrientation.h"
+#include "TrafficLights/TLPole.h"
 #include "TrafficLights/TLStyle.h"
 #include "TrafficLights/Widgets/TLWTrafficLightPreviewViewport.h"
 #include "Widgets/SCompoundWidget.h"
 
 struct FEditorModule
 {
-	FTLModule Data;
 	bool bExpanded{true};
 	TSharedPtr<SVerticalBox> Container;
 	TArray<TSharedPtr<FString>> MeshNameOptions;
@@ -24,7 +24,6 @@ struct FEditorModule
 
 struct FEditorHead
 {
-	FTLHead Data;
 	bool bExpanded{true};
 	bool bModulesExpanded{true};
 	TSharedPtr<SVerticalBox> Container;
@@ -33,7 +32,6 @@ struct FEditorHead
 
 struct FEditorPole
 {
-	FTLPole Data;
 	bool bExpanded{true};
 	bool bHeadsExpanded{true};
 	TSharedPtr<SVerticalBox> Container;
@@ -55,10 +53,9 @@ public:
 
 private:
 	void RefreshPoleList();
-	void RebuildModuleChain(FEditorHead& EditorHead);
+	void RebuildModuleChain(FTLHead& Head);
 	void Rebuild();
 	void RefreshModuleMeshOptions(int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex);
-	TArray<FTLPole*> GetAllPoleDatas();
 
 private:
 	FReply OnAddPoleClicked();
@@ -90,7 +87,8 @@ private:
 private:
 	TSharedPtr<STrafficLightPreviewViewport> PreviewViewport;
 	TArray<FEditorPole> EditorPoles;
-	TSharedPtr<SVerticalBox> PoleListContainer;
+	TArray<FTLPole> Poles;
+	TSharedPtr<SVerticalBox> RootContainer;
 
 private:
 	TArray<TSharedPtr<FString>> StyleOptions;

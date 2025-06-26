@@ -15,6 +15,7 @@
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLPole.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/SViewport.h"
 
@@ -42,16 +43,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Poles Data Table")
 	UDataTable* PolesTable{nullptr};
 
-	/** Head */
-public:
-	/** Set the head style  */
-	void SetHeadStyle(int32 Index, ETLStyle Style);
-
 	/** Modules */
 public:
-	UStaticMeshComponent* AddModuleMesh(const FTLHead& Head, FTLModule& ModuleData);
+	UStaticMeshComponent* AddModuleMesh(const FTLPole& Pole, const FTLHead& Head, FTLModule& ModuleData);
+	UStaticMeshComponent* AddPoleBaseMesh(const FTLPole& Pole);
+	UStaticMeshComponent* AddPoleExtensibleMesh(const FTLPole& Pole);
+	UStaticMeshComponent* AddPoleFinalMesh(const FTLPole& Pole);
 	void ClearModuleMeshes();
-	void Rebuild(const TArray<FTLPole*>& Poles);
+	void ClearPoleMeshes();
+	void Rebuild(TArray<FTLPole>& Poles);
 	void ResetFrame(const UStaticMeshComponent* Comp);
 
 private:
@@ -63,6 +63,8 @@ private:
 	TSharedPtr<FSceneViewport> SceneViewport;
 	TSharedPtr<SViewport> ViewportWidget;
 
-	TArray<UStaticMeshComponent*> HeadMeshComponents;
+	TArray<UStaticMeshComponent*> PoleBaseMeshComponents;
+	TArray<UStaticMeshComponent*> PoleExtensibleMeshComponents;
+	TArray<UStaticMeshComponent*> PoleFinalMeshComponents;
 	TArray<UStaticMeshComponent*> ModuleMeshComponents;
 };
