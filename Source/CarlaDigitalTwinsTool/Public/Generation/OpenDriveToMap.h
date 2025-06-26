@@ -19,6 +19,7 @@ class UProceduralMeshComponent;
 class UMeshComponent;
 class UCustomFileDownloader;
 class UMaterialInstance;
+class USplineComponent;
 
 /**
  *
@@ -99,12 +100,6 @@ public:
 
   UFUNCTION(BlueprintCallable)
   void UnloadWorldPartitionRegion(const FBox& RegionBox);
-
-  UFUNCTION(BlueprintCallable, Category = "Assets Placement")
-  UTexture2D* RenderRoadToTexture(UWorld* World);
-
-  UFUNCTION(BlueprintCallable, Category = "Assets Placement")
-  void RunPythonRoadEdges(FVector2D Center, FVector2D Extent);
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="File")
   FString FilePath;
@@ -201,8 +196,17 @@ public:
 
 protected:
 
+    UFUNCTION(BlueprintCallable, Category = "Assets Placement")
+    void RenderRoadToTexture(UWorld* World);
+
+    UFUNCTION(BlueprintCallable, Category = "Assets Placement")
+    void RunPythonRoadEdges(FVector2D Center, FVector2D Extent);
+
   UFUNCTION(BlueprintCallable)
   TArray<AActor*> GenerateMiscActors(float Offset, FVector MinLocation, FVector MaxLocation );
+
+  UFUNCTION(BlueprintImplementableEvent)
+  void SplineGenerationFinished(const TArray<USplineComponent*>& Splines);
 
   UFUNCTION( BlueprintImplementableEvent )
   void GenerationFinished(FVector MinLocation, FVector MaxLocation);

@@ -1379,7 +1379,7 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
   }
 }
 
-UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
+void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 {
     const double Limit = 2000000.0;
 
@@ -1496,7 +1496,8 @@ UTexture2D* UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
 
     Camera->Destroy();
-    return nullptr;
+
+    SplineGenerationFinished(RoadSplines);
 }
 
 void UOpenDriveToMap::RunPythonRoadEdges(FVector2D Center, FVector2D Extent)
