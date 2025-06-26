@@ -111,7 +111,7 @@ find_package (
   REQUIRED
 )
 
-set (PROJ_VERSION 7.2.0)
+set (PROJ_VERSION 9.6.0)
 message (STATUS "Looking for PROJ")
 find_package (
   PROJ ${PROJ_VERSION}
