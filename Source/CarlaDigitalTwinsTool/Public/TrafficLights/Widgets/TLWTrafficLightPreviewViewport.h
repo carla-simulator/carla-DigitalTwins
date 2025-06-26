@@ -48,7 +48,7 @@ public:
 	UStaticMeshComponent* AddModuleMesh(const FTLPole& Pole, const FTLHead& Head, FTLModule& ModuleData);
 	UStaticMeshComponent* AddPoleBaseMesh(const FTLPole& Pole);
 	UStaticMeshComponent* AddPoleExtensibleMesh(const FTLPole& Pole);
-	UStaticMeshComponent* AddPoleFinalMesh(const FTLPole& Pole);
+	UStaticMeshComponent* AddPoleCapMesh(const FTLPole& Pole);
 	void ClearModuleMeshes();
 	void ClearPoleMeshes();
 	void Rebuild(TArray<FTLPole>& Poles);
@@ -65,6 +65,6 @@ private:
 
 	TArray<UStaticMeshComponent*> PoleBaseMeshComponents;
 	TArray<UStaticMeshComponent*> PoleExtensibleMeshComponents;
-	TArray<UStaticMeshComponent*> PoleFinalMeshComponents;
+	TArray<UStaticMeshComponent*> PoleCapMeshComponents;
 	TArray<UStaticMeshComponent*> ModuleMeshComponents;
 };

@@ -37,7 +37,7 @@ struct FEditorPole
 	TSharedPtr<SVerticalBox> Container;
 	TArray<TSharedPtr<FString>> BaseMeshNameOptions;
 	TArray<TSharedPtr<FString>> ExtendibleMeshNameOptions;
-	TArray<TSharedPtr<FString>> FinalMeshNameOptions;
+	TArray<TSharedPtr<FString>> CapMeshNameOptions;
 	TArray<FEditorHead> Heads;
 };
 

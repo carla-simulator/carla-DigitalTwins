@@ -25,10 +25,6 @@ struct FTLPoleRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
 	ETLOrientation Orientation;
 
-	// In meters
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-	float Height{5.0f};
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
 	UStaticMesh* BaseMesh;
 
@@ -36,7 +32,7 @@ struct FTLPoleRow : public FTableRowBase
 	UStaticMesh* ExtendibleMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
-	UStaticMesh* FinalMesh;
+	UStaticMesh* CapMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traffic Light|Pole")
 	UStaticMesh* ConnectorMesh;

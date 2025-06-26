@@ -158,7 +158,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleExtensibleMesh(const 
 	return Comp;
 }
 
-UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleFinalMesh(const FTLPole& Pole)
+UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleCapMesh(const FTLPole& Pole)
 {
 	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
 
@@ -171,8 +171,8 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleFinalMesh(const FTLPo
 		return nullptr;
 	}
 	PreviewScene->AddComponent(Comp, PoleWorldTransform);
-	Comp->SetStaticMesh(Pole.FinalPoleMesh);
-	PoleFinalMeshComponents.Add(Comp);
+	Comp->SetStaticMesh(Pole.CapPoleMesh);
+	PoleCapMeshComponents.Add(Comp);
 
 	return Comp;
 }
@@ -220,7 +220,7 @@ void STrafficLightPreviewViewport::ClearPoleMeshes()
 			Comp->DestroyComponent();
 		}
 	}
-	for (UStaticMeshComponent* Comp : PoleFinalMeshComponents)
+	for (UStaticMeshComponent* Comp : PoleCapMeshComponents)
 	{
 		if (Comp)
 		{
@@ -234,7 +234,7 @@ void STrafficLightPreviewViewport::ClearPoleMeshes()
 	}
 	PoleBaseMeshComponents.Empty();
 	PoleExtensibleMeshComponents.Empty();
-	PoleFinalMeshComponents.Empty();
+	PoleCapMeshComponents.Empty();
 }
 
 void STrafficLightPreviewViewport::Rebuild(TArray<FTLPole>& Poles)
@@ -251,9 +251,9 @@ void STrafficLightPreviewViewport::Rebuild(TArray<FTLPole>& Poles)
 		{
 			PoleExtensibleMeshComponents.Add(AddPoleExtensibleMesh(Pole));
 		}
-		if (Pole.FinalPoleMesh)
+		if (Pole.CapPoleMesh)
 		{
-			PoleFinalMeshComponents.Add(AddPoleFinalMesh(Pole));
+			PoleCapMeshComponents.Add(AddPoleCapMesh(Pole));
 		}
 		for (FTLHead& Head : Pole.Heads)
 		{

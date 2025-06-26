@@ -54,10 +54,10 @@ struct FTLPole
 	UStaticMeshComponent* ExtendiblePoleMeshComponent{nullptr};
 
 	UPROPERTY(Transient)
-	UStaticMesh* FinalPoleMesh{nullptr};
+	UStaticMesh* CapPoleMesh{nullptr};
 
 	UPROPERTY(Transient)
-	UStaticMeshComponent* FinalPoleMeshComponent{nullptr};
+	UStaticMeshComponent* CapPoleMeshComponent{nullptr};
 
 	UPROPERTY(Transient)
 	UStaticMesh* ConnectorPoleMesh{nullptr};

@@ -2,6 +2,7 @@
 
 #include "TrafficLights/TLModuleDataTable.h"
 #include "TrafficLights/TLPoleDataTable.h"
+#include "UObject/NameTypes.h"
 
 UDataTable* FTLMeshFactory::ModuleMeshTable{nullptr};
 UDataTable* FTLMeshFactory::PoleMeshTable{nullptr};
@@ -55,30 +56,18 @@ UStaticMesh* FTLMeshFactory::GetMeshForModule(const FTLHead& Head, const FTLModu
 		return nullptr;
 	}
 
-	// Get rows
-	const auto Rows{ModuleMeshTable->GetRowNames()};
-	if (Rows.Num() == 0)
+	for (const FName& RowName : ModuleMeshTable->GetRowNames())
 	{
-		UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: no rows found in ModuleMeshTable"));
-		return nullptr;
-	}
-
-	for (const FName& RowName : Rows)
-	{
-		if (const FTLModuleRow* Row = ModuleMeshTable->FindRow<FTLModuleRow>(RowName, TEXT("GetMeshForModule")))
+		const FTLModuleRow* Row{ModuleMeshTable->FindRow<FTLModuleRow>(RowName, TEXT("GetMeshForModule"))};
+		if (!Row)
 		{
-			if (!Row)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: row '%s' not found"), *RowName.ToString());
-				continue;
-			}
-			if (Row->Style == Head.Style && Row->Orientation == Head.Orientation && Row->bHasVisor == Module.bHasVisor)
-			{
-				if (Row->Mesh)
-				{
-					return Row->Mesh;
-				}
-			}
+			UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: row '%s' not found"), *RowName.ToString());
+			continue;
+		}
+		if (Row->Style == Head.Style && Row->Orientation == Head.Orientation && Row->bHasVisor == Module.bHasVisor &&
+			IsValid(Row->Mesh))
+		{
+			return Row->Mesh;
 		}
 	}
 
@@ -95,30 +84,18 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllMeshesForModule(const FTLHead& Head, 
 		return Meshes;
 	}
 
-	// Get rows
-	const auto Rows{ModuleMeshTable->GetRowNames()};
-	if (Rows.Num() == 0)
+	for (const FName& RowName : ModuleMeshTable->GetRowNames())
 	{
-		UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: no rows found in ModuleMeshTable"));
-		return Meshes;
-	}
-
-	for (const FName& RowName : Rows)
-	{
-		if (const FTLModuleRow* Row = ModuleMeshTable->FindRow<FTLModuleRow>(RowName, TEXT("GetMeshForModule")))
+		const FTLModuleRow* Row{ModuleMeshTable->FindRow<FTLModuleRow>(RowName, TEXT("GetMeshForModule"))};
+		if (!Row)
 		{
-			if (!Row)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: row '%s' not found"), *RowName.ToString());
-				continue;
-			}
-			if (Row->Style == Head.Style && Row->Orientation == Head.Orientation && Row->bHasVisor == Module.bHasVisor)
-			{
-				if (Row->Mesh)
-				{
-					Meshes.Add(Row->Mesh);
-				}
-			}
+			UE_LOG(LogTemp, Error, TEXT("ModuleMeshFactory: row '%s' not found"), *RowName.ToString());
+			continue;
+		}
+		if (Row->Style == Head.Style && Row->Orientation == Head.Orientation && Row->bHasVisor == Module.bHasVisor &&
+			IsValid(Row->Mesh))
+		{
+			Meshes.Add(Row->Mesh);
 		}
 	}
 
@@ -127,19 +104,19 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllMeshesForModule(const FTLHead& Head, 
 
 UStaticMesh* FTLMeshFactory::GetBaseMeshForPole(const FTLPole& Pole)
 {
-	TArray<UStaticMesh*> All = GetAllBaseMeshesForPole(Pole);
+	TArray<UStaticMesh*> All{GetAllBaseMeshesForPole(Pole)};
 	return All.Num() ? All[0] : nullptr;
 }
 
 UStaticMesh* FTLMeshFactory::GetExtendibleMeshForPole(const FTLPole& Pole)
 {
-	TArray<UStaticMesh*> All = GetAllExtendibleMeshesForPole(Pole);
+	TArray<UStaticMesh*> All{GetAllExtendibleMeshesForPole(Pole)};
 	return All.Num() ? All[0] : nullptr;
 }
 
-UStaticMesh* FTLMeshFactory::GetFinalMeshForPole(const FTLPole& Pole)
+UStaticMesh* FTLMeshFactory::GetCapMeshForPole(const FTLPole& Pole)
 {
-	TArray<UStaticMesh*> All = GetAllFinalMeshesForPole(Pole);
+	TArray<UStaticMesh*> All{GetAllCapMeshesForPole(Pole)};
 	return All.Num() ? All[0] : nullptr;
 }
 
@@ -155,19 +132,16 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllBaseMeshesForPole(const FTLPole& Pole
 
 	for (const FName& RowName : Table->GetRowNames())
 	{
-		const FTLPoleRow* Row = Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllBaseMeshesForPole"));
+		const FTLPoleRow* Row{Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllBaseMeshesForPole"))};
 		if (!Row)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"), *RowName.ToString());
 			continue;
 		}
 
-		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation)
+		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation && IsValid(Row->BaseMesh))
 		{
-			if (Row->BaseMesh)
-			{
-				Meshes.Add(Row->BaseMesh);
-			}
+			Meshes.Add(Row->BaseMesh);
 		}
 	}
 	return Meshes;
@@ -185,25 +159,22 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllExtendibleMeshesForPole(const FTLPole
 
 	for (const FName& RowName : Table->GetRowNames())
 	{
-		const FTLPoleRow* Row = Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllExtendibleMeshesForPole"));
+		const FTLPoleRow* Row{Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllExtendibleMeshesForPole"))};
 		if (!Row)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"), *RowName.ToString());
 			continue;
 		}
 
-		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation)
+		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation && IsValid(Row->ExtendibleMesh))
 		{
-			if (Row->ExtendibleMesh)
-			{
-				Meshes.Add(Row->ExtendibleMesh);
-			}
+			Meshes.Add(Row->ExtendibleMesh);
 		}
 	}
 	return Meshes;
 }
 
-TArray<UStaticMesh*> FTLMeshFactory::GetAllFinalMeshesForPole(const FTLPole& Pole)
+TArray<UStaticMesh*> FTLMeshFactory::GetAllCapMeshesForPole(const FTLPole& Pole)
 {
 	TArray<UStaticMesh*> Meshes;
 	UDataTable* Table = GetPoleMeshTable();
@@ -215,19 +186,16 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllFinalMeshesForPole(const FTLPole& Pol
 
 	for (const FName& RowName : Table->GetRowNames())
 	{
-		const FTLPoleRow* Row = Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllFinalMeshesForPole"));
+		const FTLPoleRow* Row{Table->FindRow<FTLPoleRow>(RowName, TEXT("GetAllCapMeshesForPole"))};
 		if (!Row)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("PoleMeshFactory: row '%s' not found"), *RowName.ToString());
 			continue;
 		}
 
-		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation)
+		if (Row->Style == Pole.Style && Row->Orientation == Pole.Orientation && IsValid(Row->CapMesh))
 		{
-			if (Row->FinalMesh)
-			{
-				Meshes.Add(Row->FinalMesh);
-			}
+			Meshes.Add(Row->CapMesh);
 		}
 	}
 	return Meshes;

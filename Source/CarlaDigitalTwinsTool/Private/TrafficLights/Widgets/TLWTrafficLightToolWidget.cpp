@@ -211,11 +211,11 @@ FReply STrafficLightToolWidget::OnAddPoleClicked()
 
 	Pole.BasePoleMesh = FTLMeshFactory::GetBaseMeshForPole(Pole);
 	Pole.ExtendiblePoleMesh = FTLMeshFactory::GetExtendibleMeshForPole(Pole);
-	Pole.FinalPoleMesh = FTLMeshFactory::GetFinalMeshForPole(Pole);
+	Pole.CapPoleMesh = FTLMeshFactory::GetCapMeshForPole(Pole);
 
 	Pole.BasePoleMeshComponent = PreviewViewport->AddPoleBaseMesh(Pole);
 	Pole.ExtendiblePoleMeshComponent = PreviewViewport->AddPoleExtensibleMesh(Pole);
-	Pole.FinalPoleMeshComponent = PreviewViewport->AddPoleFinalMesh(Pole);
+	Pole.CapPoleMeshComponent = PreviewViewport->AddPoleCapMesh(Pole);
 
 	if (PoleIndex == 0 && IsValid(Pole.BasePoleMeshComponent))
 	{
@@ -427,11 +427,11 @@ void STrafficLightToolWidget::OnPoleOrientationChanged(ETLOrientation NewOrienta
 	Pole.Orientation = NewOrientation;
 	UStaticMesh* NewBaseStaticMesh{FTLMeshFactory::GetBaseMeshForPole(Pole)};
 	UStaticMesh* NewExtendibleStaticMesh{FTLMeshFactory::GetExtendibleMeshForPole(Pole)};
-	UStaticMesh* NewFinalStaticMesh{FTLMeshFactory::GetFinalMeshForPole(Pole)};
+	UStaticMesh* NewCapStaticMesh{FTLMeshFactory::GetCapMeshForPole(Pole)};
 
 	Pole.BasePoleMesh = NewBaseStaticMesh;
 	Pole.ExtendiblePoleMesh = NewExtendibleStaticMesh;
-	Pole.FinalPoleMesh = NewFinalStaticMesh;
+	Pole.CapPoleMesh = NewCapStaticMesh;
 
 	Rebuild();
 }
@@ -444,11 +444,11 @@ void STrafficLightToolWidget::OnPoleStyleChanged(ETLStyle NewStyle, int32 PoleIn
 	Pole.Style = NewStyle;
 	UStaticMesh* NewBaseStaticMesh{FTLMeshFactory::GetBaseMeshForPole(Pole)};
 	UStaticMesh* NewExtendibleStaticMesh{FTLMeshFactory::GetExtendibleMeshForPole(Pole)};
-	UStaticMesh* NewFinalStaticMesh{FTLMeshFactory::GetFinalMeshForPole(Pole)};
+	UStaticMesh* NewCapStaticMesh{FTLMeshFactory::GetCapMeshForPole(Pole)};
 
 	Pole.BasePoleMesh = NewBaseStaticMesh;
 	Pole.ExtendiblePoleMesh = NewExtendibleStaticMesh;
-	Pole.FinalPoleMesh = NewFinalStaticMesh;
+	Pole.CapPoleMesh = NewCapStaticMesh;
 
 	Rebuild();
 }
@@ -503,12 +503,12 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 		ExtendibleNames.Add(MakeShared<FString>(Mesh->GetName()));
 	}
 
-	TArray<TSharedPtr<FString>>& FinalNames{EditorPole.FinalMeshNameOptions};
-	TArray<UStaticMesh*> FinalPoleMeshes{FTLMeshFactory::GetAllFinalMeshesForPole(Pole)};
-	FinalNames.Empty();
-	for (const UStaticMesh* Mesh : FinalPoleMeshes)
+	TArray<TSharedPtr<FString>>& CapNames{EditorPole.CapMeshNameOptions};
+	TArray<UStaticMesh*> CapPoleMeshes{FTLMeshFactory::GetAllCapMeshesForPole(Pole)};
+	CapNames.Empty();
+	for (const UStaticMesh* Mesh : CapPoleMeshes)
 	{
-		FinalNames.Add(MakeShared<FString>(Mesh->GetName()));
+		CapNames.Add(MakeShared<FString>(Mesh->GetName()));
 	}
 
 	TSharedPtr<FString> InitialBasePtr{nullptr};
@@ -535,14 +535,14 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 			}
 	}
 
-	TSharedPtr<FString> InitialFinalPtr{nullptr};
-	if (Pole.FinalPoleMesh)
+	TSharedPtr<FString> InitialCapPtr{nullptr};
+	if (Pole.CapPoleMesh)
 	{
-		const FString Curr{Pole.FinalPoleMesh->GetName()};
-		for (auto& name : FinalNames)
+		const FString Curr{Pole.CapPoleMesh->GetName()};
+		for (auto& name : CapNames)
 			if (*name == Curr)
 			{
-				InitialFinalPtr = name;
+				InitialCapPtr = name;
 				break;
 			}
 	}
@@ -932,7 +932,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																															"."));
 																										 })]]]
 
-					   // — Final Mesh Combo —
+					   // — Cap Mesh Combo —
 					   + SVerticalBox::Slot()
 							 .AutoHeight()
 							 .Padding(2,
@@ -941,8 +941,8 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 										VAlign_Center)[SNew(STextBlock).Text(FText::FromString("Top Mesh:"))] +
 									SHorizontalBox::Slot().AutoWidth().Padding(8, 0)[SNew(SComboBox<TSharedPtr<FString>>)
 																						 .OptionsSource(
-																							 &EditorPole.FinalMeshNameOptions)
-																						 .InitiallySelectedItem(InitialFinalPtr)
+																							 &EditorPole.CapMeshNameOptions)
+																						 .InitiallySelectedItem(InitialCapPtr)
 																						 .OnGenerateWidget_Lambda(
 																							 [](TSharedPtr<FString> InPtr) {
 																								 return SNew(STextBlock)
@@ -959,16 +959,16 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																								 FTLPole& Pole{Poles[PoleIndex]};
 																								 for (UStaticMesh* Mesh :
 																									 FTLMeshFactory::
-																										 GetAllFinalMeshesForPole(
+																										 GetAllCapMeshesForPole(
 																											 Pole))
 																								 {
 																									 if (IsValid(Mesh) &&
 																										 Mesh->GetName() ==
 																											 *NewSelection)
 																									 {
-																										 Pole.FinalPoleMesh = Mesh;
-																										 if (Pole.FinalPoleMeshComponent)
-																											 Pole.FinalPoleMeshComponent
+																										 Pole.CapPoleMesh = Mesh;
+																										 if (Pole.CapPoleMeshComponent)
+																											 Pole.CapPoleMeshComponent
 																												 ->SetStaticMesh(
 																													 Mesh);
 																										 break;
@@ -983,8 +983,8 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																											 FTLPole& Pole{
 																												 Poles[PoleIndex]};
 																											 return FText::FromString(
-																												 Pole.FinalPoleMesh
-																													 ? Pole.FinalPoleMesh
+																												 Pole.CapPoleMesh
+																													 ? Pole.CapPoleMesh
 																														   ->GetName()
 																													 : TEXT("S"
 																															"e"
