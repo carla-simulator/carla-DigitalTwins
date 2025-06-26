@@ -419,6 +419,40 @@ void STrafficLightToolWidget::OnHeadStyleChanged(ETLStyle NewStyle, int32 PoleIn
 	Rebuild();
 }
 
+void STrafficLightToolWidget::OnPoleOrientationChanged(ETLOrientation NewOrientation, int32 PoleIndex)
+{
+	check(EditorPoles.IsValidIndex(PoleIndex));
+	FTLPole& Pole{Poles[PoleIndex]};
+
+	Pole.Orientation = NewOrientation;
+	UStaticMesh* NewBaseStaticMesh{FTLMeshFactory::GetBaseMeshForPole(Pole)};
+	UStaticMesh* NewExtendibleStaticMesh{FTLMeshFactory::GetExtendibleMeshForPole(Pole)};
+	UStaticMesh* NewFinalStaticMesh{FTLMeshFactory::GetFinalMeshForPole(Pole)};
+
+	Pole.BasePoleMesh = NewBaseStaticMesh;
+	Pole.ExtendiblePoleMesh = NewExtendibleStaticMesh;
+	Pole.FinalPoleMesh = NewFinalStaticMesh;
+
+	Rebuild();
+}
+
+void STrafficLightToolWidget::OnPoleStyleChanged(ETLStyle NewStyle, int32 PoleIndex)
+{
+	check(Poles.IsValidIndex(PoleIndex));
+	FTLPole& Pole{Poles[PoleIndex]};
+
+	Pole.Style = NewStyle;
+	UStaticMesh* NewBaseStaticMesh{FTLMeshFactory::GetBaseMeshForPole(Pole)};
+	UStaticMesh* NewExtendibleStaticMesh{FTLMeshFactory::GetExtendibleMeshForPole(Pole)};
+	UStaticMesh* NewFinalStaticMesh{FTLMeshFactory::GetFinalMeshForPole(Pole)};
+
+	Pole.BasePoleMesh = NewBaseStaticMesh;
+	Pole.ExtendiblePoleMesh = NewExtendibleStaticMesh;
+	Pole.FinalPoleMesh = NewFinalStaticMesh;
+
+	Rebuild();
+}
+
 void STrafficLightToolWidget::OnModuleVisorChanged(ECheckBoxState NewState, int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex)
 {
 	check(Poles.IsValidIndex(PoleIndex));
@@ -519,6 +553,252 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 		.Padding(4)
 		.OnAreaExpansionChanged_Lambda([&EditorPole](bool b) { EditorPole.bExpanded = b; })
 		.BodyContent()[SNew(SVerticalBox)
+					   // — STYLE ComboBox —
+					   + SVerticalBox::Slot().AutoHeight().Padding(2,
+							 4)[SNew(SHorizontalBox) +
+								SHorizontalBox::Slot().AutoWidth().VAlign(
+									VAlign_Center)[SNew(STextBlock).Text(FText::FromString("Style:"))] +
+								SHorizontalBox::Slot().AutoWidth().Padding(8,
+									0)[SNew(SComboBox<TSharedPtr<FString>>)
+										   .OptionsSource(&StyleOptions)
+										   .InitiallySelectedItem(StyleOptions[(int32) Pole.Style])
+										   .OnGenerateWidget_Lambda(
+											   [](TSharedPtr<FString> In) { return SNew(STextBlock).Text(FText::FromString(*In)); })
+										   .OnSelectionChanged_Lambda(
+											   [this, PoleIndex](TSharedPtr<FString> NewStyle, ESelectInfo::Type)
+											   {
+												   const int32 Choice{
+													   StyleOptions.IndexOfByPredicate([&](auto& S) { return S == NewStyle; })};
+												   Poles[PoleIndex].Style = static_cast<ETLStyle>(Choice);
+												   OnPoleStyleChanged(Poles[PoleIndex].Style, PoleIndex);
+												   PreviewViewport->Rebuild(Poles);
+											   })[SNew(STextBlock)
+													  .Text_Lambda(
+														  [this, PoleIndex]() {
+															  return FText::FromString(
+																  *StyleOptions[(int32) Poles[PoleIndex].Style]);
+														  })]]]
+					   // — ORIENTATION ComboBox —
+					   + SVerticalBox::Slot()
+							 .AutoHeight()
+							 .Padding(2,
+								 4)[SNew(SHorizontalBox) +
+									SHorizontalBox::Slot().AutoWidth().VAlign(
+										VAlign_Center)[SNew(STextBlock).Text(FText::FromString("Orientation:"))] +
+									SHorizontalBox::Slot().AutoWidth().Padding(8, 0)[SNew(SComboBox<TSharedPtr<FString>>)
+																						 .OptionsSource(&OrientationOptions)
+																						 .InitiallySelectedItem(OrientationOptions[(
+																							 int32) Pole.Orientation])
+																						 .OnGenerateWidget_Lambda(
+																							 [](TSharedPtr<FString> In) {
+																								 return SNew(STextBlock)
+																									 .Text(FText::FromString(*In));
+																							 })
+																						 .OnSelectionChanged_Lambda(
+																							 [this,
+																								 PoleIndex](TSharedPtr<FString> NewOrientation, ESelectInfo::Type)
+																							 {
+																								 FTLPole& Pole{Poles[PoleIndex]};
+																								 const int32 Choice{
+																									 OrientationOptions
+																										 .IndexOfByPredicate(
+																											 [&](auto& S) {
+																												 return S ==
+																														NewOrientation;
+																											 })};
+																								 OnPoleOrientationChanged(
+																									 static_cast<ETLOrientation>(
+																										 Choice),
+																									 PoleIndex);
+																								 PreviewViewport->Rebuild(Poles);
+																							 })
+																							 [SNew(STextBlock)
+																									 .Text_Lambda(
+																										 [this, PoleIndex]()
+																										 {
+																											 FTLPole& Pole{
+																												 Poles[PoleIndex]};
+																											 return FText::FromString(
+																												 *OrientationOptions
+																													 [(int32) Pole
+																															 .Orientation]);
+																										 })]]]
+					   // — TRANSFORM (Location XYZ) —
+					   + SVerticalBox::Slot().AutoHeight().Padding(
+							 2, 4)[SNew(STextBlock).Text(FText::FromString("Transform Location"))] +
+					   SVerticalBox::Slot().AutoHeight().Padding(2, 0)[SNew(SHorizontalBox) +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetLocation()
+																							  .X;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector L{Pole.Transform.GetLocation()};
+																						  L.X = V;
+																						  Pole.Transform.SetLocation(L);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })] +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetLocation()
+																							  .Y;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector L{Pole.Transform.GetLocation()};
+																						  L.Y = V;
+																						  Pole.Transform.SetLocation(L);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })] +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetLocation()
+																							  .Z;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector L{Pole.Transform.GetLocation()};
+																						  L.Z = V;
+																						  Pole.Transform.SetLocation(L);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })]]
+
+					   // — TRANSFORM (Rotation Pitch/Yaw/Roll) —
+					   + SVerticalBox::Slot().AutoHeight().Padding(
+							 2, 4)[SNew(STextBlock).Text(FText::FromString("Transform Rotation"))] +
+					   SVerticalBox::
+						   Slot()
+							   .AutoHeight()
+							   .Padding(2, 0)[SNew(SHorizontalBox) +
+											  SHorizontalBox::Slot()
+												  .FillWidth(1)
+												  .Padding(2, 0)[SNew(SNumericEntryBox<float>)
+																	 .Value_Lambda(
+																		 [this,
+																			 PoleIndex]() {
+																			 return Poles[PoleIndex].Transform.Rotator().Pitch;
+																		 })
+																	 .OnValueCommitted_Lambda(
+																		 [this, PoleIndex](float V, ETextCommit::Type)
+																		 {
+																			 FTLPole& Pole{Poles[PoleIndex]};
+																			 FRotator R{Pole.Transform.Rotator()};
+																			 R.Pitch = V;
+																			 Pole.Transform.SetRotation(FQuat(R));
+																			 PreviewViewport->Rebuild(Poles);
+																		 })] +
+											  SHorizontalBox::Slot().FillWidth(1).Padding(2, 0)[SNew(SNumericEntryBox<float>)
+																									.Value_Lambda(
+																										[this, PoleIndex]()
+																										{
+																											FTLPole& Pole{
+																												Poles[PoleIndex]};
+																											return Pole.Transform
+																												.Rotator()
+																												.Yaw;
+																										})
+																									.OnValueCommitted_Lambda(
+																										[this, PoleIndex](float V,
+																											ETextCommit::Type)
+																										{
+																											FTLPole& Pole{
+																												Poles[PoleIndex]};
+																											FRotator R{
+																												Pole.Transform
+																													.Rotator()};
+																											R.Yaw = V;
+																											Pole.Transform
+																												.SetRotation(
+																													FQuat(R));
+																											PreviewViewport
+																												->Rebuild(Poles);
+																										})] +
+											  SHorizontalBox::Slot()
+												  .FillWidth(1)
+												  .Padding(2, 0)[SNew(SNumericEntryBox<float>)
+																	 .Value_Lambda([this, PoleIndex]()
+																		 { return Poles[PoleIndex].Transform.Rotator().Roll; })
+																	 .OnValueCommitted_Lambda(
+																		 [this, PoleIndex](float V, ETextCommit::Type)
+																		 {
+																			 FTLPole& Pole{Poles[PoleIndex]};
+																			 FRotator R{Pole.Transform.Rotator()};
+																			 R.Roll = V;
+																			 Pole.Transform.SetRotation(FQuat(R));
+																			 PreviewViewport->Rebuild(Poles);
+																		 })]]
+
+					   // — TRANSFORM (Scale XYZ) —
+					   + SVerticalBox::Slot().AutoHeight().Padding(
+							 2, 4)[SNew(STextBlock).Text(FText::FromString("Transform Scale"))] +
+					   SVerticalBox::Slot().AutoHeight().Padding(2, 0)[SNew(SHorizontalBox) +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetScale3D()
+																							  .X;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector S{Pole.Transform.GetScale3D()};
+																						  S.X = V;
+																						  Pole.Transform.SetScale3D(S);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })] +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetScale3D()
+																							  .Y;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector S{Pole.Transform.GetScale3D()};
+																						  S.Y = V;
+																						  Pole.Transform.SetScale3D(S);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })] +
+																	   SHorizontalBox::Slot().FillWidth(1).Padding(2,
+																		   0)[SNew(SNumericEntryBox<float>)
+																				  .Value_Lambda(
+																					  [this, PoleIndex]() {
+																						  return Poles[PoleIndex]
+																							  .Transform.GetScale3D()
+																							  .Z;
+																					  })
+																				  .OnValueCommitted_Lambda(
+																					  [this, PoleIndex](float V, ETextCommit::Type)
+																					  {
+																						  FTLPole& Pole{Poles[PoleIndex]};
+																						  FVector S{Pole.Transform.GetScale3D()};
+																						  S.Z = V;
+																						  Pole.Transform.SetScale3D(S);
+																						  PreviewViewport->Rebuild(Poles);
+																					  })]]
 
 					   // — Base Mesh Combo —
 					   + SVerticalBox::Slot()
@@ -574,8 +854,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																												 Pole.BasePoleMesh
 																													 ? Pole.BasePoleMesh
 																														   ->GetName()
-																													 : TEXT("Select"
-																															"..."));
+																													 : TEXT("S"
+																															"e"
+																															"l"
+																															"e"
+																															"c"
+																															"t"
+																															"."
+																															"."
+																															"."));
 																										 })]]]
 
 					   // — Extendible Mesh Combo —
@@ -634,8 +921,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																												 Pole.ExtendiblePoleMesh
 																													 ? Pole.ExtendiblePoleMesh
 																														   ->GetName()
-																													 : TEXT("Select"
-																															"..."));
+																													 : TEXT("S"
+																															"e"
+																															"l"
+																															"e"
+																															"c"
+																															"t"
+																															"."
+																															"."
+																															"."));
 																										 })]]]
 
 					   // — Final Mesh Combo —
@@ -692,8 +986,15 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 																												 Pole.FinalPoleMesh
 																													 ? Pole.FinalPoleMesh
 																														   ->GetName()
-																													 : TEXT("Select"
-																															"..."));
+																													 : TEXT("S"
+																															"e"
+																															"l"
+																															"e"
+																															"c"
+																															"t"
+																															"."
+																															"."
+																															"."));
 																										 })]]]
 					   // — Pole Height Slider + Numeric Entry —
 					   + SVerticalBox::

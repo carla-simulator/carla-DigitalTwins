@@ -69,6 +69,8 @@ private:
 	void OnModuleVisorChanged(ECheckBoxState NewState, int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex);
 	void OnHeadOrientationChanged(ETLOrientation NewOrientation, int32 PoleIndex, int32 HeadIndex);
 	void OnHeadStyleChanged(ETLStyle NewStyle, int32 PoleIndex, int32 HeadIndex);
+	void OnPoleOrientationChanged(ETLOrientation NewOrientation, int32 PoleIndex);
+	void OnPoleStyleChanged(ETLStyle NewStyle, int32 PoleIndex);
 
 private:
 	TSharedRef<SWidget> BuildPoleEntry(int32 Index);
