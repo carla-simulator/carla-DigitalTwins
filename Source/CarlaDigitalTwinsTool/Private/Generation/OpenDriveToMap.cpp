@@ -61,10 +61,44 @@
 
 #include "DrawDebugHelpers.h"
 #include "Paths/GenerationPathsHelper.h"
+
 #if WITH_EDITOR
 
+#include "Generation/OpenDriveToMap.h"
+#if WITH_EDITOR
+#include "FileHelpers.h"
+#endif
+#include "UObject/ConstructorHelpers.h"
 
-
+#include "Editor.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/World.h"
+#include "Engine/StaticMeshActor.h"
+#include "Engine/SceneCapture2D.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Components/StaticMeshComponent.h"
+#include "ImageUtils.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Modules/ModuleManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Misc/Parse.h"
+#include "UObject/SoftObjectPath.h"
+#include "Materials/MaterialInterface.h"
+#include "Engine/Engine.h"
+#include "RenderUtils.h"
+#include "RHICommandList.h"
+#include "HighResScreenshot.h"
+#include "Runtime/ImageWriteQueue/Public/ImagePixelData.h"
+#include "Runtime/ImageWriteQueue/Public/ImageWriteTask.h"
+#include "Runtime/ImageWriteQueue/Public/ImageWriteQueue.h"
+#include "Online/CustomFileDownloader.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/Texture2D.h"
+// #include "Utils/GoogleStreetViewManager.h"
+#include "Utils/GeometryImporter.h"
 struct FTerrainMeshData
 {
   int32 MeshIndex;
@@ -82,11 +116,15 @@ UOpenDriveToMap::UOpenDriveToMap()
   bRoadsFinished = false;
   bHasStarted = false;
   bMapLoaded = false;
+#ifdef _WIN32
+  PythonBinPath = TEXT("python");
+#else
+  PythonBinPath = TEXT("/usr/bin/python3");
+#endif
 }
 
 UOpenDriveToMap::~UOpenDriveToMap()
 {
-
 }
 
 FString LaneTypeToFString(carla::road::Lane::LaneType LaneType)
@@ -598,6 +636,8 @@ void UOpenDriveToMap::LoadMap()
     return;
   }
 
+  FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+
   FString FileContent;
   UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("UOpenDriveToMap::LoadMap(): File to load %s"), *FilePath );
   FFileHelper::LoadFileToString(FileContent, *FilePath);
@@ -646,6 +686,10 @@ void UOpenDriveToMap::LoadMap()
       FString CurrentMapName = World->GetMapName();
       CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
       UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
+      AsyncTask(ENamedThreads::GameThread, [this, World]
+          {
+              RenderRoadToTexture(World);
+          });
     }
 #endif
 
@@ -1063,7 +1107,8 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
 #if ENGINE_MAJOR_VERSION < 5
     DefaultHeightmap->PlatformData->Mips[0].BulkData.Unlock();
 #else
-    DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.Unlock();
+    if (!DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.IsUnlocked())
+      DefaultHeightmap->GetPlatformData()->Mips[0].BulkData.Unlock();
 #endif
 
     float LandscapeHeight = ( (PixelColor.R/255.0f ) * ( MaxHeight - MinHeight ) ) + MinHeight;
@@ -1334,5 +1379,177 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
   }
 }
 
+void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
+{
+    const double Limit = 2000000.0;
+
+    FBox Bounds(EForceInit::ForceInitToZero);
+
+    TArray<AActor*> HiddenActors;
+    {
+        TArray<AActor*> Actors;
+        UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), Actors);
+        HiddenActors.Reserve(Actors.Num());
+        for (auto& Actor : Actors)
+        {
+            auto BoundingBox = Actor->GetComponentsBoundingBox();
+            Bounds += BoundingBox;
+            auto Name = Actor->GetActorLabel();
+            if (!Name.Contains("DrivingLane", ESearchCase::CaseSensitive))
+            {
+                Actor->SetActorHiddenInGame(true);
+                HiddenActors.Add(Actor);
+                continue;
+            }
+        }
+        HiddenActors.Shrink();
+    }
+    
+    // Temporarily get a larger square bounding box
+    auto MinComp = std::min({ Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z });
+    auto MaxComp = std::max({ Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z });
+    Bounds.Min = FVector(MinComp);
+    Bounds.Max = FVector(MaxComp);
+
+    auto Center = Bounds.GetCenter();
+    auto Extent = Bounds.GetExtent();
+    auto ExtentMin = std::min(Extent.X, Extent.Y);
+    auto ExtentMax = std::max(Extent.X, Extent.Y);
+    auto OrthoWidth = ExtentMax * 2.0F;
+
+    auto RenderTarget = NewObject<UTextureRenderTarget2D>();
+    RenderTarget->AddToRoot();
+    RenderTarget->ClearColor = FLinearColor::Black;
+    auto Extent2D = FVector2D(Extent.X, Extent.Y);
+    auto RenderTargetScale = UE_CM_TO_M * 8;
+    auto RenderTargetSize = Extent2D * RenderTargetScale;
+    RenderTarget->InitAutoFormat(
+        (uint32)std::round(RenderTargetSize.X),
+        (uint32)std::round(RenderTargetSize.Y));
+    RenderTarget->UpdateResourceImmediate(true);
+
+    FActorSpawnParameters ActorSpawnParameters;
+    ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    ActorSpawnParameters.Name = TEXT("camera");
+    auto Camera = World->SpawnActor<ASceneCapture2D>(
+        ASceneCapture2D::StaticClass(),
+        ActorSpawnParameters);
+    auto SCC2D = Camera->GetCaptureComponent2D();
+    SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
+    SCC2D->OrthoWidth = OrthoWidth;
+    SCC2D->CaptureSource = ESceneCaptureSource::SCS_BaseColor;
+    SCC2D->bCaptureEveryFrame = false;
+    SCC2D->bCaptureOnMovement = false;
+    SCC2D->TextureTarget = RenderTarget;
+
+    auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
+    auto Rotation = Camera->GetActorRotation();
+    Rotation = FRotator(-90.0F, Rotation.Yaw, Rotation.Roll);
+
+    Camera->SetActorLocation(Location);
+    Camera->SetActorRotation(Rotation);
+
+    SCC2D->CaptureScene();
+    TArray<FColor> Pixels;
+    RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
+
+    auto Shape = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
+    auto ImageTask = MakeUnique<FImageWriteTask>();
+    auto PixelData = MakeUnique<TImagePixelData<FColor>>(Shape);
+    PixelData->Pixels = Pixels;
+    ImageTask->PixelData = MoveTemp(PixelData);
+
+    FString ImagePath = FPaths::ConvertRelativePathToFull(
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+
+    ImageTask->Filename = ImagePath;
+    ImageTask->Format = EImageFormat::PNG;
+    ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
+    ImageTask->bOverwriteFile = true;
+    ImageTask->PixelPreProcessors.Add(TAsyncAlphaWrite<FColor>(255));
+
+    auto& HighResScreenshotConfig = GetHighResScreenshotConfig();
+    auto Task = HighResScreenshotConfig.ImageWriteQueue->Enqueue(MoveTemp(ImageTask));
+
+    for (auto& HiddenActor : HiddenActors)
+        HiddenActor->SetActorHiddenInGame(false);
+
+    Task.Wait();
+
+    RunPythonRoadEdges(
+        FVector2D(Center.X, Center.Y),
+        FVector2D(Extent.X, Extent.Y));
+
+    FVector2D DistPerPixel(Extent.X / RenderTarget->SizeX, Extent.Y / RenderTarget->SizeY);
+
+    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DistPerPixel.X, DistPerPixel.Y);
+
+    auto JsonPath = FPaths::ConvertRelativePathToFull(
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
+
+    auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
+        World,
+        JsonPath,
+        FVector2D(Bounds.Min.X, Bounds.Min.Y),
+        FVector2D(Bounds.Max.X, Bounds.Max.Y));
+
+    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
+
+    Camera->Destroy();
+
+    SplineGenerationFinished(RoadSplines);
+}
+
+void UOpenDriveToMap::RunPythonRoadEdges(FVector2D Center, FVector2D Extent)
+{
+  UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Running Python road edges extraction script..."));
+  
+  FString PythonExe = PythonBinPath;
+  FString PluginPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins"));
+  FString ScriptPath = PluginPath / TEXT("Content/Python/road_edge_detection.py");
+
+  FString Args;
+  Args += FString::Printf(TEXT("\"%s\" "), *ScriptPath);
+  Args += FString::Printf(TEXT("--plugin_path=\"%s\" "), *PluginPath);
+
+  void* ReadPipe = nullptr;
+  void* WritePipe = nullptr;
+  FPlatformProcess::CreatePipe(ReadPipe, WritePipe);
+
+  FProcHandle ProcHandle = FPlatformProcess::CreateProc(
+      *PythonExe,
+      *Args,
+      true,   // bLaunchDetached
+      false,  // bLaunchHidden
+      false,  // bLaunchReallyHidden
+      nullptr,
+      0,
+      nullptr,
+      WritePipe,  // Pipe for stdout/stderr
+      WritePipe
+  );
+
+  if (!ProcHandle.IsValid())
+  {
+      UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Failed to launch Python script."));
+      FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+      return;
+  }
+
+  FString Output;
+  while (FPlatformProcess::IsProcRunning(ProcHandle))
+  {
+      FString NewOutput = FPlatformProcess::ReadPipe(ReadPipe);
+      Output += NewOutput;
+      FPlatformProcess::Sleep(0.01f);
+  }
+
+  Output += FPlatformProcess::ReadPipe(ReadPipe);
+
+  FPlatformProcess::CloseProc(ProcHandle);
+  FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+
+  UE_LOG(LogCarlaDigitalTwinsTool, Display, TEXT("Python Output:\n%s"), *Output);
+}
 
 #endif
