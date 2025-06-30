@@ -27,6 +27,7 @@ public:
     static TArray<USplineComponent*> CreateSplinesFromJson(
         UWorld* World,
         const FString& JsonFilePath,
-        FVector2D Min,
-        FVector2D Max);
+        FVector2D Center,
+        FVector2D Extent,
+        FIntPoint RTExtent);
 };

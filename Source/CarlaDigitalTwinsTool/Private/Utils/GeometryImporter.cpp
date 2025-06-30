@@ -154,8 +154,9 @@ TArray<USplineComponent*> UGeometryImporter::ImportGeoJsonPolygonsToSplines(UWor
 TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
     UWorld* World, 
     const FString& JsonFilePath,
-    FVector2D Min,
-    FVector2D Max)
+    FVector2D Center,
+    FVector2D Extent,
+    FIntPoint RTExtent)
 {
     TArray<USplineComponent*> CreatedSplines;
 
@@ -175,30 +176,34 @@ TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
     }
 
     const TArray<TSharedPtr<FJsonValue>>* ContourArray;
-    if (!RootValue->TryGetArray(ContourArray)) return CreatedSplines;
+    if (!RootValue->TryGetArray(ContourArray))
+        return CreatedSplines;
 
     float ZOffset = 0.0f;
 
     for (int32 ContourIdx = 0; ContourIdx < ContourArray->Num(); ++ContourIdx)
     {
         const TArray<TSharedPtr<FJsonValue>>* PointList;
-        if (!(*ContourArray)[ContourIdx]->TryGetArray(PointList)) continue;
+        if (!(*ContourArray)[ContourIdx]->TryGetArray(PointList))
+            continue;
 
         TArray<FVector> Points;
 
         for (const TSharedPtr<FJsonValue>& PointVal : *PointList)
         {
             const TArray<TSharedPtr<FJsonValue>>* XY;
-            if (PointVal->TryGetArray(XY) && XY->Num() == 2)
-            {
-                double X = 0.0, Y = 0.0;
-                if ((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y))
-                {
-                    auto P = Min + (Max - Min) * FVector2D(X, Y);
-                    // P.X = -P.X + (Max.X - Min.X);
-                    Points.Add(FVector(-P.Y, P.X, ZOffset));
-                }
-            }
+            if (!(PointVal->TryGetArray(XY) && XY->Num() == 2))
+                continue;
+            double X = 0.0, Y = 0.0;
+            if (!((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y)))
+                continue;
+            auto UV = FVector2D(X, Y);
+            UV /= FVector2D(RTExtent);
+            UV.Y = 1.0F - UV.Y;
+            UV -= FVector2D(0.5F, 0.5F);
+            UV.X = -UV.X;
+            auto P = Center + UV * Extent;
+            Points.Add(FVector(P.X, P.Y, ZOffset));
         }
 
         FString Name = FString::Printf(TEXT("Spline_%d"), ContourIdx);

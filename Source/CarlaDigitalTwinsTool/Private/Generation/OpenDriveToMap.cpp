@@ -1381,8 +1381,6 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
 
 void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 {
-    const double Limit = 2000000.0;
-
     FBox Bounds(EForceInit::ForceInitToZero);
 
     TArray<AActor*> HiddenActors;
@@ -1405,51 +1403,51 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         HiddenActors.Shrink();
     }
     
-    // Temporarily get a larger square bounding box
-    auto MinComp = std::min({ Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z });
-    auto MaxComp = std::max({ Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z });
-    Bounds.Min = FVector(MinComp);
-    Bounds.Max = FVector(MaxComp);
-
     auto Center = Bounds.GetCenter();
-    auto Extent = Bounds.GetExtent();
-    auto ExtentMin = std::min(Extent.X, Extent.Y);
-    auto ExtentMax = std::max(Extent.X, Extent.Y);
-    auto OrthoWidth = ExtentMax * 2.0F;
+    auto Extent = FVector2D(Bounds.Max) - FVector2D(Bounds.Min);
+    auto OrthoWidth = std::max(Extent.X, Extent.Y);
+
+    auto RenderTargetScale = UE_CM_TO_M * 8;
+    auto RenderTargetExtent = Extent * RenderTargetScale;
+    auto RenderTargetSize = FIntPoint(
+        (int32)std::round(RenderTargetExtent.X),
+        (int32)std::round(RenderTargetExtent.Y));
 
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
-    auto Extent2D = FVector2D(Extent.X, Extent.Y);
-    auto RenderTargetScale = UE_CM_TO_M * 8;
-    auto RenderTargetSize = Extent2D * RenderTargetScale;
-    RenderTarget->InitAutoFormat(
-        (uint32)std::round(RenderTargetSize.X),
-        (uint32)std::round(RenderTargetSize.Y));
+    RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
     RenderTarget->UpdateResourceImmediate(true);
 
     FActorSpawnParameters ActorSpawnParameters;
     ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     ActorSpawnParameters.Name = TEXT("camera");
+
     auto Camera = World->SpawnActor<ASceneCapture2D>(
         ASceneCapture2D::StaticClass(),
         ActorSpawnParameters);
-    auto SCC2D = Camera->GetCaptureComponent2D();
-    SCC2D->ProjectionType = ECameraProjectionMode::Orthographic;
-    SCC2D->OrthoWidth = OrthoWidth;
-    SCC2D->CaptureSource = ESceneCaptureSource::SCS_BaseColor;
-    SCC2D->bCaptureEveryFrame = false;
-    SCC2D->bCaptureOnMovement = false;
-    SCC2D->TextureTarget = RenderTarget;
 
-    auto Location = FVector(Center.X, Center.Y, std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z)));
-    auto Rotation = Camera->GetActorRotation();
-    Rotation = FRotator(-90.0F, Rotation.Yaw, Rotation.Roll);
+    auto CaptureComponent = Camera->GetCaptureComponent2D();
+    CaptureComponent->ProjectionType = ECameraProjectionMode::Orthographic;
+    CaptureComponent->OrthoWidth = OrthoWidth;
+    CaptureComponent->CaptureSource = ESceneCaptureSource::SCS_BaseColor;
+    CaptureComponent->bCaptureEveryFrame = false;
+    CaptureComponent->bCaptureOnMovement = false;
+    CaptureComponent->TextureTarget = RenderTarget;
 
+    auto CameraZ = std::max(Bounds.Max.X, std::max(Bounds.Max.Y, Bounds.Max.Z));
+    auto Location = FVector(Center.X, Center.Y, CameraZ);
+    
+    auto Rotation = FRotationMatrix::MakeFromXZ(
+        (Center - Location).GetSafeNormal(),
+        Extent.X > Extent.Y ? FVector::XAxisVector : FVector::YAxisVector
+    ).ToQuat();
+    
     Camera->SetActorLocation(Location);
     Camera->SetActorRotation(Rotation);
 
-    SCC2D->CaptureScene();
+    CaptureComponent->CaptureScene();
+
     TArray<FColor> Pixels;
     RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
 
@@ -1474,15 +1472,13 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     for (auto& HiddenActor : HiddenActors)
         HiddenActor->SetActorHiddenInGame(false);
 
+    // Camera->Destroy();
+    
     Task.Wait();
 
     RunPythonRoadEdges(
         FVector2D(Center.X, Center.Y),
         FVector2D(Extent.X, Extent.Y));
-
-    FVector2D DistPerPixel(Extent.X / RenderTarget->SizeX, Extent.Y / RenderTarget->SizeY);
-
-    UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("DistPerPixel: %f %f"), DistPerPixel.X, DistPerPixel.Y);
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
         FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
@@ -1490,12 +1486,11 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
         JsonPath,
-        FVector2D(Bounds.Min.X, Bounds.Min.Y),
-        FVector2D(Bounds.Max.X, Bounds.Max.Y));
+        FVector2D(Center.X, Center.Y),
+        Extent,
+        RenderTargetSize);
 
     UE_LOG(LogCarlaDigitalTwinsTool, Log, TEXT("Number of road splines: %i"), RoadSplines.Num());
-
-    Camera->Destroy();
 
     SplineGenerationFinished(RoadSplines);
 }
