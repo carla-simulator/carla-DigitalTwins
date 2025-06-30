@@ -1437,15 +1437,7 @@ TArray<FRoadSignInfo> UOpenDriveToMap::GetAllRoadSignsInfo()
     }
 
     const auto SignalTransform = Signal->GetTransform();
-    const auto& Loc = SignalTransform.location;
-
-    Info.Location = FVector(Loc.x * 100.0, Loc.y * 100.0, Loc.z * 100.0);
-
-    // UE_LOG(LogTemp, Log, TEXT("Road Sign [%d]: SignId=%s, RoadId=%s, S=%.2f, T=%.2f"),
-    //        i, *Info.SignId, *Info.RoadId, Info.S, Info.T);
-    UE_LOG(LogTemp, Log, TEXT("Road Sign [%d]: SignId=%s, RoadId=%s, S=%.2f, T=%.2f, Location=(%.2f, %.2f, %.2f)"),
-      i, *Info.SignId, *Info.RoadId, Info.S, Info.T,
-      Info.Location.X, Info.Location.Y, Info.Location.Z);
+    Info.Transform = SignalTransform;
 
     RoadSigns.Add(Info);
   }

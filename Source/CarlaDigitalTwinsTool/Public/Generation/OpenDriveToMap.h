@@ -36,7 +36,7 @@ struct FRoadSignInfo
   FString Orientation;
 
   UPROPERTY(BlueprintReadOnly)
-  FVector Location;
+  FTransform Transform;
 };
 
 class UProceduralMeshComponent;
