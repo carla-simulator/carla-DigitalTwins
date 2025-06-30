@@ -58,7 +58,7 @@
 #include "BlueprintUtil/BlueprintUtilFunctions.h"
 #include "Carla/OpenDrive/OpenDriveParser.h"
 #include "Carla/RPC/String.h"
-
+	#include "DrawDebugHelpers.h"
 #include "DrawDebugHelpers.h"
 #include "Paths/GenerationPathsHelper.h"
 #if WITH_EDITOR
@@ -221,66 +221,67 @@ void UOpenDriveToMap::CreateTerrain(const int NumberOfTerrainX, const int Number
   FVector MinBox(MinPosition.X, MaxPosition.Y, 0);
 
   TArray<FTerrainMeshData> AllMeshData;
-  AllMeshData.SetNum((NumberOfTerrainX + 1) * (NumberOfTerrainY + 1));
+  AllMeshData.SetNum((NumberOfTerrainX) * (NumberOfTerrainY));
 
-  ParallelFor((NumberOfTerrainX + 1) * (NumberOfTerrainY + 1), [&](int32 Index)
+  for (int32 y = 0; y < NumberOfTerrainY; ++y)
   {
-    int32 x = Index % (NumberOfTerrainX + 1);
-    int32 y = Index / (NumberOfTerrainX + 1);
-
-    FVector2D Offset(MinBox.X + x * TileSizeX, MinBox.Y + y * TileSizeY);
-
-    FTerrainMeshData& MeshData = AllMeshData[Index];
-    MeshData.MeshIndex = Index;
-    MeshData.Offset = Offset;
-
-    const int32 VertsX = MeshGridResolution + 1;
-    const int32 VertsY = MeshGridResolution + 1;
-    const float StepX = TileSizeX / MeshGridResolution;
-    const float StepY = TileSizeY / MeshGridResolution;
-    //const float HeightScale = 100.0f; // cm
-
-    TArray<FVector>& Vertices = MeshData.Vertices;
-    TArray<int32>& Triangles = MeshData.Triangles;
-    TArray<FVector2D>& UVs = MeshData.UVs;
-    TArray<FVector>& Normals = MeshData.Normals;
-    TArray<FProcMeshTangent>& Tangents = MeshData.Tangents;
-
-    Vertices.Reserve(VertsX * VertsY);
-    UVs.Reserve(VertsX * VertsY);
-    Triangles.Reserve((VertsX - 1) * (VertsY - 1) * 6);
-
-    for (int32 iy = 0; iy < VertsY; ++iy)
+    for (int32 x = 0; x < NumberOfTerrainX; ++x)
     {
-      for (int32 ix = 0; ix < VertsX; ++ix)
+      int32 Index = x + y * NumberOfTerrainX;
+
+      FVector2D Offset(MinBox.X + x * TileSizeX, MinBox.Y + y * TileSizeY);
+
+      FTerrainMeshData& MeshData = AllMeshData[Index];
+      MeshData.MeshIndex = Index;
+      MeshData.Offset = Offset;
+
+      const int32 VertsX = MeshGridResolution + 1;
+      const int32 VertsY = MeshGridResolution + 1;
+      const float StepX = TileSizeX / MeshGridResolution;
+      const float StepY = TileSizeY / MeshGridResolution;
+
+      TArray<FVector>& Vertices = MeshData.Vertices;
+      TArray<int32>& Triangles = MeshData.Triangles;
+      TArray<FVector2D>& UVs = MeshData.UVs;
+      TArray<FVector>& Normals = MeshData.Normals;
+      TArray<FProcMeshTangent>& Tangents = MeshData.Tangents;
+
+      Vertices.Reserve(VertsX * VertsY);
+      UVs.Reserve(VertsX * VertsY);
+      Triangles.Reserve((VertsX - 1) * (VertsY - 1) * 6);
+
+      for (int32 iy = 0; iy < VertsY; ++iy)
       {
-        float X = ix * StepX;
-        float Y = iy * StepY;
-        float Height = GetHeightForLandscape(FVector(Offset.X + X, Offset.Y + Y, 0));
-        Vertices.Add(FVector(X, Y, Height));
-        UVs.Add(FVector2D(static_cast<float>(ix) / MeshGridResolution, static_cast<float>(iy) / MeshGridResolution));
+        for (int32 ix = 0; ix < VertsX; ++ix)
+        {
+          float X = ix * StepX;
+          float Y = iy * StepY;
+          float Height = GetHeightForLandscape(FVector(Offset.X + X, Offset.Y + Y, 0));
+          Vertices.Add(FVector(X, Y, Height));
+          UVs.Add(FVector2D(static_cast<float>(ix) / MeshGridResolution, static_cast<float>(iy) / MeshGridResolution));
+        }
+      }
+
+      for (int32 iy = 0; iy < VertsY - 1; ++iy)
+      {
+        for (int32 ix = 0; ix < VertsX - 1; ++ix)
+        {
+          int32 i0 = ix + iy * VertsX;
+          int32 i1 = (ix + 1) + iy * VertsX;
+          int32 i2 = ix + (iy + 1) * VertsX;
+          int32 i3 = (ix + 1) + (iy + 1) * VertsX;
+
+          Triangles.Add(i0);
+          Triangles.Add(i2);
+          Triangles.Add(i1);
+
+          Triangles.Add(i3);
+          Triangles.Add(i1);
+          Triangles.Add(i2);
+        }
       }
     }
-
-    for (int32 iy = 0; iy < VertsY - 1; ++iy)
-    {
-      for (int32 ix = 0; ix < VertsX - 1; ++ix)
-      {
-        int32 i0 = ix + iy * VertsX;
-        int32 i1 = (ix + 1) + iy * VertsX;
-        int32 i2 = ix + (iy + 1) * VertsX;
-        int32 i3 = (ix + 1) + (iy + 1) * VertsX;
-
-        Triangles.Add(i0);
-        Triangles.Add(i2);
-        Triangles.Add(i1);
-
-        Triangles.Add(i3);
-        Triangles.Add(i1);
-        Triangles.Add(i2);
-      }
-    }
-  });
+  }
 
   for (const FTerrainMeshData& MeshData : AllMeshData)
   {
@@ -344,7 +345,7 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
   // const float GridSectionSize = 100.0f; // In cm
   const float HeightScale = 3.0f;
 
-  UWorld* World = UEditorLevelLibrary::GetEditorWorld();
+  UWorld* World = GetEditorWorld();
   // Creation of the procedural mesh
   AStaticMeshActor* MeshActor = World->SpawnActor<AStaticMeshActor>();
   MeshActor->SetActorLocation(FVector(Offset.X, Offset.Y, 0));
@@ -431,7 +432,7 @@ void UOpenDriveToMap::CreateTerrainMesh(const int MeshIndex, const FVector2D Off
 
 AActor* UOpenDriveToMap::SpawnActorWithCheckNoCollisions(UClass* ActorClassToSpawn, FTransform Transform)
 {
-  UWorld* World = UEditorLevelLibrary::GetEditorWorld();
+  UWorld* World = GetEditorWorld();
   FActorSpawnParameters SpawnParameters;
   SpawnParameters.bNoFail = true;
   SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -479,7 +480,7 @@ void UOpenDriveToMap::GenerateTile(){
 #if ENGINE_MAJOR_VERSION < 5
     UEditorLevelLibrary::LoadLevel(*BaseLevelName);
     AActor* QueryActor = UGameplayStatics::GetActorOfClass(
-                            GEditor->GetEditorWorldContext().World(),
+                            GetEditorWorld(),
                             ALargeMapManager::StaticClass() );
     if( QueryActor != nullptr ){
       ALargeMapManager* LmManager = Cast<ALargeMapManager>(QueryActor);
@@ -509,7 +510,7 @@ void UOpenDriveToMap::GenerateTile(){
 
       GenerateAll(CarlaMap, MinPosition, MaxPosition);
       
-      Landscapes.Empty();
+
       bHasStarted = true;
       bRoadsFinished = true;
       bMapLoaded = true;
@@ -543,14 +544,13 @@ bool UOpenDriveToMap::GoNextTile(){
 }
 
 void UOpenDriveToMap::ReturnToMainLevel(){
-  Landscapes.Empty();
   FEditorFileUtils::SaveDirtyPackages(false, true, true, false, false, false, nullptr);
   UEditorLevelLibrary::LoadLevel(*BaseLevelName);
 }
 
 void UOpenDriveToMap::CorrectPositionForAllActorsInCurrentTile(){
   TArray<AActor*> FoundActors;
-  UGameplayStatics::GetAllActorsOfClass(UEditorLevelLibrary::GetEditorWorld(), AActor::StaticClass(), FoundActors);
+  UGameplayStatics::GetAllActorsOfClass(GetEditorWorld(), AActor::StaticClass(), FoundActors);
   for( AActor* Current : FoundActors){
     Current->AddActorWorldOffset(-MinPosition, false);
     if( AStaticMeshActor* MeshActor = Cast<AStaticMeshActor>(Current) ){
@@ -568,7 +568,7 @@ FString UOpenDriveToMap::GetStringForCurrentTile(){
 }
 
 AActor* UOpenDriveToMap::SpawnActorInEditorWorld(UClass* Class, FVector Location, FRotator Rotation){
-  return UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AActor>(Class,
+  return GetEditorWorld()->SpawnActor<AActor>(Class,
     Location, Rotation);
 }
 
@@ -638,7 +638,7 @@ void UOpenDriveToMap::LoadMap()
     UE_LOG(LogCarlaDigitalTwinsTool, Warning, TEXT("MapName %s"), *MapName);
 
     AActor* QueryActor = UGameplayStatics::GetActorOfClass(
-                                UEditorLevelLibrary::GetEditorWorld(),
+                                GetEditorWorld(),
                                 ALargeMapManager::StaticClass() );
 #if ENGINE_MAJOR_VERSION < 5
     if( QueryActor != nullptr )
@@ -649,7 +649,7 @@ void UOpenDriveToMap::LoadMap()
       TileSize = LargeMapManager->GetTileSize();
       Tile0Offset = LargeMapManager->GetTile0Offset();
       CurrentTilesInXY = FIntVector(0,0,0);
-      ULevel* PersistantLevel = UEditorLevelLibrary::GetEditorWorld()->PersistentLevel;
+      ULevel* PersistantLevel = GetEditorWorld()->PersistentLevel;
       BaseLevelName = LargeMapManager->LargeMapTilePath + "/" + LargeMapManager->LargeMapName;
       do{
         GenerateTileStandalone();
@@ -678,7 +678,7 @@ void UOpenDriveToMap::LoadMap()
       UGameplayStatics::OpenLevel(World, FName(*CurrentMapName));
     }
 #endif
-
+    Landscapes.Empty();
   }
 }
 
@@ -699,7 +699,7 @@ TArray<AActor*> UOpenDriveToMap::GenerateMiscActors(float Offset, FVector MinLoc
 
     NewTransform = GetSnappedPosition(NewTransform);
 
-    AActor* Spawner = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(),
+    AActor* Spawner = GetEditorWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(),
       NewTransform.GetLocation(), NewTransform.Rotator());
     Spawner->Tags.Add(FName("MiscSpawnPosition"));
     Spawner->Tags.Add(FName(cl.second.c_str()));
@@ -833,7 +833,7 @@ void UOpenDriveToMap::GenerateRoadMesh( const boost::optional<carla::road::Map>&
     TArray<FProcMeshTangent> Tangents;
     UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Entry.MeshData.Vertices, Entry.MeshData.Triangles, Entry.MeshData.UV0, Entry.MeshData.Normals, Tangents);
 
-    AStaticMeshActor* TempActor = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>();
+    AStaticMeshActor* TempActor = GetEditorWorld()->SpawnActor<AStaticMeshActor>();
     UStaticMeshComponent* StaticMeshComponent = TempActor->GetStaticMeshComponent();
     TempActor->SetActorLabel(FString("SM_Lane_") + FString::FromInt(Index));
 
@@ -964,7 +964,7 @@ void UOpenDriveToMap::GenerateLaneMarks(const boost::optional<carla::road::Map>&
       continue;
     }
 
-    AStaticMeshActor* TempActor = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>();
+    AStaticMeshActor* TempActor = GetEditorWorld()->SpawnActor<AStaticMeshActor>();
     UStaticMeshComponent* StaticMeshComponent = TempActor->GetStaticMeshComponent();
     TempActor->SetActorLabel(FString("SM_LaneMark_") + FString::FromInt(meshindex));
     StaticMeshComponent->CastShadow = false;
@@ -1060,7 +1060,7 @@ void UOpenDriveToMap::GenerateTreePositions( const boost::optional<carla::road::
     FTransform NewTransform ( FRotator(cl.first.rotation), FVector(cl.first.location), scale );
     NewTransform = GetSnappedPosition(NewTransform);
 
-    AActor* Spawner = UEditorLevelLibrary::GetEditorWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(),
+    AActor* Spawner = GetEditorWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(),
       NewTransform.GetLocation(), NewTransform.Rotator());
 
     Spawner->Tags.Add(FName("TreeSpawnPosition"));
@@ -1124,14 +1124,14 @@ float UOpenDriveToMap::GetHeight(float PosX, float PosY, bool bDrivingLane){
 FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin )
 {
   FTransform ToReturn = Origin;
-  FVector Start = Origin.GetLocation() - FVector( 0, 0, MinHeight * 1.1);
-  FVector End = Origin.GetLocation() + FVector( 0, 0, MaxHeight * 1.1);
+  FVector Start = Origin.GetLocation() + FVector( 0, 0, MaxHeight + 10000.0f);
+  FVector End = Origin.GetLocation() - FVector( 0, 0, MinHeight - 10000.0f);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
   CollisionQuery.bTraceComplex = true;
   FCollisionResponseParams CollisionParams;
 
-  if( UEditorLevelLibrary::GetEditorWorld()->LineTraceSingleByChannel(
+  if( GetEditorWorld()->LineTraceSingleByChannel(
     HitResult,
     Start,
     End,
@@ -1140,20 +1140,34 @@ FTransform UOpenDriveToMap::GetSnappedPosition( FTransform Origin )
     CollisionParams
   ) )
   {
+    UE_LOG(LogCarlaDigitalTwinsTool, Error, TEXT("Hit Actor %s at location %s"), *HitResult.GetActor()->GetName(), *HitResult.Location.ToString() );
     ToReturn.SetLocation(HitResult.Location);
+  }
+  else
+  {
+    DrawDebugLine(
+      GetEditorWorld(),
+      Start,
+      End,
+      FColor::Red,
+      false, 50.0f, 0, 1.0f
+    );
+    UE_LOG(LogCarlaDigitalTwinsTool, Warning, TEXT("No Hit Actor at location %s"), *Start.ToString() );
+    ToReturn.SetLocation(FVector(Start.X, Start.Y, GetHeight(Start.X, Start.Y, false)));
   }
   return ToReturn;
 }
 
 float UOpenDriveToMap::GetHeightForLandscape( FVector Origin ){
-  FVector Start = Origin - FVector( 0, 0, MinHeight * 1.1);
-  FVector End = Origin + FVector( 0, 0, MaxHeight * 1.1);
+  FVector Start = Origin + FVector( 0, 0, MaxHeight + 5000.0f);
+  FVector End = Origin - FVector( 0, 0, MinHeight - 5000.0f);
   FHitResult HitResult;
   FCollisionQueryParams CollisionQuery;
+  CollisionQuery.bTraceComplex = true;
   CollisionQuery.AddIgnoredActors(Landscapes);
   FCollisionResponseParams CollisionParams;
 
-  if( UEditorLevelLibrary::GetEditorWorld()->LineTraceSingleByChannel(
+  if( GetEditorWorld()->LineTraceSingleByChannel(
     HitResult,
     Start,
     End,
@@ -1238,7 +1252,7 @@ void UOpenDriveToMap::ImportOSM(){
 void UOpenDriveToMap::MoveActorsToSubLevels(TArray<AActor*> ActorsToMove)
 {
   AActor* QueryActor = UGameplayStatics::GetActorOfClass(
-                                UEditorLevelLibrary::GetEditorWorld(),
+                                GetEditorWorld(),
                                 ALargeMapManager::StaticClass() );
 
   if( QueryActor != nullptr ){
@@ -1304,7 +1318,7 @@ void UOpenDriveToMap::MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, A
             continue;
         }
 
-        UWorld* World = UEditorLevelLibrary::GetEditorWorld();
+        UWorld* World = GetEditorWorld();
         ULevelStreamingDynamic* StreamingLevel = Tile->StreamingLevel;
         StreamingLevel->bShouldBlockOnLoad = true;
         StreamingLevel->SetShouldBeVisible(true);

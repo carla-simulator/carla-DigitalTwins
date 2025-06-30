@@ -82,10 +82,10 @@ public:
   AActor* SpawnActorInEditorWorld(UClass* Class, FVector Location, FRotator Rotation);
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetEditorWorld();
+  static UWorld* GetEditorWorld();
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetGameWorld();
+  static UWorld* GetGameWorld();
 
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, ALargeMapManager* LargeMapManager);
