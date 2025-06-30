@@ -10,6 +10,7 @@
 #include "EditorUtilityObject.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include <Carla/Road/RoadMap.h>
+#include "TextureResource.h"
 #include <boost/optional.hpp>
 #include "Generation/OpenDriveFileGenerationParameters.h"
 #include "OpenDriveToMap.generated.h"
@@ -81,10 +82,10 @@ public:
   AActor* SpawnActorInEditorWorld(UClass* Class, FVector Location, FRotator Rotation);
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetEditorWorld();
+  static UWorld* GetEditorWorld();
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetGameWorld();
+  static UWorld* GetGameWorld();
 
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, ALargeMapManager* LargeMapManager);
@@ -254,4 +255,9 @@ private:
   UPROPERTY()
   UTexture2D* Heightmap;
 
+
+  FSharedImageConstRef HeightmapCopy;
+  TArrayView64<const uint16> HeightmapPixels;
+  int32 HeightmapWidth = 0;
+  int32 HeightmapHeight = 0;
 };
