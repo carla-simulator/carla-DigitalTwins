@@ -10,8 +10,9 @@
 #include "EditorUtilityObject.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include <Carla/Road/RoadMap.h>
+#include "TextureResource.h"
 #include <boost/optional.hpp>
-
+#include "Generation/OpenDriveFileGenerationParameters.h"
 #include "OpenDriveToMap.generated.h"
 
 USTRUCT(BlueprintType)
@@ -104,10 +105,10 @@ public:
   AActor* SpawnActorInEditorWorld(UClass* Class, FVector Location, FRotator Rotation);
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetEditorWorld();
+  static UWorld* GetEditorWorld();
 
   UFUNCTION(BlueprintCallable)
-  UWorld* GetGameWorld();
+  static UWorld* GetGameWorld();
 
   UFUNCTION(BlueprintCallable)
   TArray<FRoadSignInfo> GetAllRoadSignsInfo(); 
@@ -157,6 +158,9 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defaults")
   UMaterialInstance* DefaultLandscapeMaterial;
+  
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
+  FOpenDriveFileGenerationParameters OpenDriveGenParams;
 
   UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Settings" )
   float DistanceBetweenTrees = 50.0f;
@@ -277,4 +281,9 @@ private:
   UPROPERTY()
   UTexture2D* Heightmap;
 
+
+  FSharedImageConstRef HeightmapCopy;
+  TArrayView64<const uint16> HeightmapPixels;
+  int32 HeightmapWidth = 0;
+  int32 HeightmapHeight = 0;
 };
