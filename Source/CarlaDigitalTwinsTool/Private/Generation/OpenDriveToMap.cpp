@@ -58,7 +58,7 @@
 #include "BlueprintUtil/BlueprintUtilFunctions.h"
 #include "Carla/OpenDrive/OpenDriveParser.h"
 #include "Carla/RPC/String.h"
-	#include "DrawDebugHelpers.h"
+#include "Carla/Road/element/RoadInfoSignal.h"
 #include "DrawDebugHelpers.h"
 #include "Paths/GenerationPathsHelper.h"
 #if WITH_EDITOR
@@ -1385,5 +1385,64 @@ void UOpenDriveToMap::UnloadWorldPartitionRegion(const FBox& RegionBox)
   }
 }
 
+TArray<FRoadSignInfo> UOpenDriveToMap::GetAllRoadSignsInfo()
+{
+  TArray<FRoadSignInfo> RoadSigns;
+  if (!CarlaMap.has_value())
+  {
+    return RoadSigns;
+  }
+
+  const carla::road::Map &Map = CarlaMap.value();
+  auto Signals = Map.GetAllSignalReferences();
+
+  for (int32 i = 0; i < Signals.size(); ++i)
+  {
+    const auto& SignalRef = Signals[i];
+    if (!SignalRef)
+    {
+      continue;
+    }
+
+    const auto* Signal = SignalRef->GetSignal();
+    if (!Signal)
+    {
+      continue;
+    }
+
+    FRoadSignInfo Info;
+    Info.SignId = FString(SignalRef->GetSignalId().c_str());
+    Info.RoadId = FString::FromInt(SignalRef->GetRoadId());
+    Info.S = SignalRef->GetS();
+    Info.T = SignalRef->GetT();
+
+    auto signalOrientation = SignalRef->GetOrientation();
+    switch (signalOrientation)
+    {
+      case carla::road::SignalOrientation::Positive: 
+        Info.Orientation = TEXT("Positive");
+        break;
+
+      case carla::road::SignalOrientation::Negative: 
+        Info.Orientation = TEXT("Negative");
+        break;
+
+      case carla::road::SignalOrientation::Both: 
+        Info.Orientation = TEXT("Both");
+        break;
+
+      default:
+        Info.Orientation = TEXT("Unknown");
+        break;
+    }
+
+    const auto SignalTransform = Signal->GetTransform();
+    Info.Transform = SignalTransform;
+
+    RoadSigns.Add(Info);
+  }
+
+  return RoadSigns;
+}
 
 #endif
