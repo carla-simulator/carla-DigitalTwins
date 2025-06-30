@@ -14,6 +14,29 @@
 
 #include "OpenDriveToMap.generated.h"
 
+USTRUCT(BlueprintType)
+struct FRoadSignInfo
+{
+  GENERATED_BODY()
+
+  UPROPERTY(BlueprintReadOnly)
+  FString SignId;
+
+  UPROPERTY(BlueprintReadOnly)
+  FString RoadId;
+
+  UPROPERTY(BlueprintReadOnly)
+  double S;
+
+  UPROPERTY(BlueprintReadOnly)
+  double T;
+
+  UPROPERTY(BlueprintReadOnly)
+  FString Orientation;
+
+  UPROPERTY(BlueprintReadOnly)
+  FVector Location;
+};
 
 class UProceduralMeshComponent;
 class UMeshComponent;
@@ -85,6 +108,9 @@ public:
 
   UFUNCTION(BlueprintCallable)
   UWorld* GetGameWorld();
+
+  UFUNCTION(BlueprintCallable)
+  TArray<FRoadSignInfo> GetAllRoadSignsInfo(); 
 
   UFUNCTION(BlueprintCallable, Category = "Assets Placement")
   static void MoveActorsToSubLevelWithLargeMap(TArray<AActor*> Actors, ALargeMapManager* LargeMapManager);
