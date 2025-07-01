@@ -1402,6 +1402,12 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         }
         HiddenActors.Shrink();
     }
+
+    // Temporarily get a larger square bounding box
+    auto MinComp = std::min({ Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z });
+    auto MaxComp = std::max({ Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z });
+    Bounds.Min = FVector(MinComp);
+    Bounds.Max = FVector(MaxComp);
     
     auto Center = Bounds.GetCenter();
     auto Extent = FVector2D(Bounds.Max) - FVector2D(Bounds.Min);
@@ -1459,7 +1465,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     ImageTask->PixelData = MoveTemp(PixelData);
 
     FString ImagePath = FPaths::ConvertRelativePathToFull(
-        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("PythonIntermediate") / TEXT("road_render.png");
 
     ImageTask->Filename = ImagePath;
     ImageTask->Format = EImageFormat::PNG;
@@ -1482,7 +1488,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         FVector2D(Extent.X, Extent.Y));
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
-        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("PythonIntermediate") / TEXT("contours.json");
 
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
