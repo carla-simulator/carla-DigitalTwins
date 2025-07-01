@@ -123,7 +123,7 @@ UStaticMesh* FTLMeshFactory::GetCapMeshForPole(const FTLPole& Pole)
 TArray<UStaticMesh*> FTLMeshFactory::GetAllBaseMeshesForPole(const FTLPole& Pole)
 {
 	TArray<UStaticMesh*> Meshes;
-	UDataTable* Table = GetPoleMeshTable();
+	UDataTable* Table{GetPoleMeshTable()};
 	if (!Table)
 	{
 		UE_LOG(LogTemp, Error, TEXT("PoleMeshFactory: PoleMeshTable is null"));
@@ -150,7 +150,7 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllBaseMeshesForPole(const FTLPole& Pole
 TArray<UStaticMesh*> FTLMeshFactory::GetAllExtendibleMeshesForPole(const FTLPole& Pole)
 {
 	TArray<UStaticMesh*> Meshes;
-	UDataTable* Table = GetPoleMeshTable();
+	UDataTable* Table{GetPoleMeshTable()};
 	if (!Table)
 	{
 		UE_LOG(LogTemp, Error, TEXT("PoleMeshFactory: PoleMeshTable is null"));
@@ -177,7 +177,7 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllExtendibleMeshesForPole(const FTLPole
 TArray<UStaticMesh*> FTLMeshFactory::GetAllCapMeshesForPole(const FTLPole& Pole)
 {
 	TArray<UStaticMesh*> Meshes;
-	UDataTable* Table = GetPoleMeshTable();
+	UDataTable* Table{GetPoleMeshTable()};
 	if (!Table)
 	{
 		UE_LOG(LogTemp, Error, TEXT("PoleMeshFactory: PoleMeshTable is null"));

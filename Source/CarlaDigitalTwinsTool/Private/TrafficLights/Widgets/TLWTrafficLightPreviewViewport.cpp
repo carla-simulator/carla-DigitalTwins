@@ -107,7 +107,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLPole&
 	UMaterialInstanceDynamic* LightMID = ModuleData.LightMID;
 	if (LightMID)
 	{
-		LightMID->SetScalarParameterValue(TEXT("Emmisive Intensity"), ModuleData.EmissiveIntensity);
+		LightMID->SetScalarParameterValue(TEXT("Emissive Intensity"), ModuleData.EmissiveIntensity);
 		LightMID->SetVectorParameterValue(TEXT("Emissive Color"), ModuleData.EmissiveColor);
 		LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(ModuleData.U));
 		LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(ModuleData.V));

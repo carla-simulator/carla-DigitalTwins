@@ -938,7 +938,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 							 .Padding(2,
 								 4)[SNew(SHorizontalBox) +
 									SHorizontalBox::Slot().AutoWidth().VAlign(
-										VAlign_Center)[SNew(STextBlock).Text(FText::FromString("Top Mesh:"))] +
+										VAlign_Center)[SNew(STextBlock).Text(FText::FromString("Cap Mesh:"))] +
 									SHorizontalBox::Slot().AutoWidth().Padding(8, 0)[SNew(SComboBox<TSharedPtr<FString>>)
 																						 .OptionsSource(
 																							 &EditorPole.CapMeshNameOptions)
@@ -2033,7 +2033,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 																						 Comp)})
 																			 {
 																				 LightMID->SetScalarParameterValue(
-																					 TEXT("Emmisive Intensity"),
+																					 TEXT("Emissive Intensity"),
 																					 Module.EmissiveIntensity);
 																				 LightMID->SetVectorParameterValue(
 																					 TEXT("Emissive Color"), Module.EmissiveColor);
