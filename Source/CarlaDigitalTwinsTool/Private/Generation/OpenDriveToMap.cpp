@@ -1405,7 +1405,6 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     
     auto Center = Bounds.GetCenter();
     auto Extent = FVector2D(Bounds.Max) - FVector2D(Bounds.Min);
-    auto OrthoWidth = std::max(Extent.X, Extent.Y);
 
     auto RenderTargetScale = UE_CM_TO_M * 8;
     auto RenderTargetExtent = Extent * RenderTargetScale;
@@ -1416,8 +1415,11 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     auto RenderTarget = NewObject<UTextureRenderTarget2D>();
     RenderTarget->AddToRoot();
     RenderTarget->ClearColor = FLinearColor::Black;
-    RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
-    RenderTarget->UpdateResourceImmediate(true);
+    RenderTarget->OverrideFormat = PF_FloatRGB;
+    RenderTarget->bForceLinearGamma = true;
+    RenderTarget->SizeX = RenderTargetSize.X;
+    RenderTarget->SizeY = RenderTargetSize.Y;
+    RenderTarget->UpdateResource();
 
     FActorSpawnParameters ActorSpawnParameters;
     ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1429,7 +1431,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
 
     auto CaptureComponent = Camera->GetCaptureComponent2D();
     CaptureComponent->ProjectionType = ECameraProjectionMode::Orthographic;
-    CaptureComponent->OrthoWidth = OrthoWidth;
+    CaptureComponent->OrthoWidth = Extent.X;
     CaptureComponent->CaptureSource = ESceneCaptureSource::SCS_BaseColor;
     CaptureComponent->bCaptureEveryFrame = false;
     CaptureComponent->bCaptureOnMovement = false;
@@ -1440,7 +1442,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     
     auto Rotation = FRotationMatrix::MakeFromXZ(
         (Center - Location).GetSafeNormal(),
-        Extent.X > Extent.Y ? FVector::XAxisVector : FVector::YAxisVector
+        FVector::YAxisVector
     ).ToQuat();
     
     Camera->SetActorLocation(Location);
@@ -1451,9 +1453,8 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     TArray<FColor> Pixels;
     RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
 
-    auto Shape = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
     auto ImageTask = MakeUnique<FImageWriteTask>();
-    auto PixelData = MakeUnique<TImagePixelData<FColor>>(Shape);
+    auto PixelData = MakeUnique<TImagePixelData<FColor>>(RenderTargetSize);
     PixelData->Pixels = Pixels;
     ImageTask->PixelData = MoveTemp(PixelData);
 
