@@ -1458,7 +1458,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
     ImageTask->PixelData = MoveTemp(PixelData);
 
     FString ImagePath = FPaths::ConvertRelativePathToFull(
-        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("road_render.png");
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("PythonIntermediate") / TEXT("road_render.png");
 
     ImageTask->Filename = ImagePath;
     ImageTask->Format = EImageFormat::PNG;
@@ -1481,7 +1481,7 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         FVector2D(Extent.X, Extent.Y));
 
     auto JsonPath = FPaths::ConvertRelativePathToFull(
-        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("contours.json");
+        FPaths::ProjectPluginsDir() / TEXT("carla-digitaltwins")) / TEXT("PythonIntermediate") / TEXT("contours.json");
 
     auto RoadSplines = UGeometryImporter::CreateSplinesFromJson(
         World,
