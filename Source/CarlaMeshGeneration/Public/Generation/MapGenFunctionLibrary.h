@@ -57,4 +57,7 @@ public:
 
   UFUNCTION(BlueprintCallable)
   static UInstancedStaticMeshComponent* AddInstancedStaticMeshComponentToActor(AActor* TargetActor);
+
+  UFUNCTION(BlueprintCallable)
+  static UStaticMeshComponent* AddStaticMeshComponentToActor(AActor* TargetActor);
 };
