@@ -156,7 +156,7 @@ TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
     const FString& JsonFilePath,
     FVector2D Center,
     FVector2D Extent,
-    FIntPoint RTExtent)
+    FIntPoint RenderTargetSize)
 {
     TArray<USplineComponent*> CreatedSplines;
 
@@ -197,12 +197,13 @@ TArray<USplineComponent*> UGeometryImporter::CreateSplinesFromJson(
             double X = 0.0, Y = 0.0;
             if (!((*XY)[0]->TryGetNumber(X) && (*XY)[1]->TryGetNumber(Y)))
                 continue;
-            auto UV = FVector2D(X, Y);
-            UV /= FVector2D(RTExtent);
+            FVector2D UV(X, Y);
+            UV /= FVector2D(RenderTargetSize);
             UV.Y = 1.0F - UV.Y;
             UV -= FVector2D(0.5F, 0.5F);
             UV.X = -UV.X;
-            auto P = Center + UV * Extent;
+            FVector2D P = Center + UV * Extent;
+
             Points.Add(FVector(P.X, P.Y, ZOffset));
         }
 

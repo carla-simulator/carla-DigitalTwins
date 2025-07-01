@@ -1402,6 +1402,12 @@ void UOpenDriveToMap::RenderRoadToTexture(UWorld* World)
         }
         HiddenActors.Shrink();
     }
+
+    // Temporarily get a larger square bounding box
+    auto MinComp = std::min({ Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z });
+    auto MaxComp = std::max({ Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z });
+    Bounds.Min = FVector(MinComp);
+    Bounds.Max = FVector(MaxComp);
     
     auto Center = Bounds.GetCenter();
     auto Extent = FVector2D(Bounds.Max) - FVector2D(Bounds.Min);

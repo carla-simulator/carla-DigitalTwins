@@ -3,7 +3,7 @@
 SCRIPT_PATH="$(readlink -f -- "${BASH_SOURCE[0]}")"
 SOURCE_DIR="$(dirname "${SCRIPT_PATH}")"
 
-python -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
 BOOST_COMPONENTS="asio;iterator;date_time;geometry;container;variant2;gil;filesystem"
 
