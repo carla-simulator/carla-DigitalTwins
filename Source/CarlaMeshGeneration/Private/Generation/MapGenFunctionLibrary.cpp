@@ -316,6 +316,36 @@ UInstancedStaticMeshComponent* UMapGenFunctionLibrary::AddInstancedStaticMeshCom
   return ISMComponent;
 }
 
+UStaticMeshComponent* UMapGenFunctionLibrary::AddStaticMeshComponentToActor(AActor* TargetActor){
+  if ( !TargetActor )
+  {
+      UE_LOG(LogCarlaMapGenFunctionLibrary, Warning, TEXT("Invalid TargetActor in AddInstancedStaticMeshComponentToActor"));
+      return nullptr;
+  }
+
+  if (!TargetActor->GetRootComponent())
+  {
+      USceneComponent* NewRoot = NewObject<USceneComponent>(TargetActor, TEXT("GeneratedRootComponent"));
+      TargetActor->SetRootComponent(NewRoot);
+      NewRoot->RegisterComponent();
+  }
+
+  // Crear el componente instanciado
+  UStaticMeshComponent* SMComponent = NewObject<UStaticMeshComponent>(TargetActor);
+  if (!SMComponent)
+  {
+      UE_LOG(LogCarlaMapGenFunctionLibrary, Error, TEXT("Could not create UStaticMeshComponent"));
+      return nullptr;
+  }
+
+  SMComponent->SetupAttachment(TargetActor->GetRootComponent());
+  SMComponent->RegisterComponent();
+
+  TargetActor->AddInstanceComponent(SMComponent);
+
+  return SMComponent;
+}
+
 void UMapGenFunctionLibrary::SmoothVerticesDeep(
   TArray<FVector>& Vertices,
   const TArray<int32>& Indices,

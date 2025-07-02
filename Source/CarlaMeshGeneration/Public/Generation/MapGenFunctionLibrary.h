@@ -59,6 +59,9 @@ public:
   static UInstancedStaticMeshComponent* AddInstancedStaticMeshComponentToActor(AActor* TargetActor);
 
   UFUNCTION(BlueprintCallable)
+  static UStaticMeshComponent* AddStaticMeshComponentToActor(AActor* TargetActor);
+
+  UFUNCTION(BlueprintCallable)
   static void SmoothVerticesDeep(
     TArray<FVector>& Vertices,
     const TArray<int32>& Indices,
