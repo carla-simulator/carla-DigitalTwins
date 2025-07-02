@@ -236,9 +236,7 @@ FReply STrafficLightToolWidget::OnDeletePoleClicked(int32 PoleIndex)
 	EditorPoles.RemoveAt(PoleIndex);
 	Poles.RemoveAt(PoleIndex);
 	RefreshPoleList();
-	{
-		PreviewViewport->Rebuild(Poles);
-	}
+	Rebuild();
 
 	return FReply::Handled();
 }
@@ -325,7 +323,7 @@ FReply STrafficLightToolWidget::OnDeleteModuleClicked(int32 PoleIndex, int32 Hea
 
 	check(Pole.Heads.IsValidIndex(HeadIndex));
 	FEditorHead& EditorHead{EditorPole.Heads[HeadIndex]};
-	FTLHead& Head{Pole.Heads[PoleIndex]};
+	FTLHead& Head{Pole.Heads[HeadIndex]};
 
 	check(EditorHead.Modules.IsValidIndex(ModuleIndex));
 	EditorHead.Modules.RemoveAt(ModuleIndex);
@@ -591,7 +589,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						const int32 Choice{StyleOptions.IndexOfByPredicate([&](auto& S) { return S == NewStyle; })};
 						Poles[PoleIndex].Style = static_cast<ETLStyle>(Choice);
 						OnPoleStyleChanged(Poles[PoleIndex].Style, PoleIndex);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 					[SNew(STextBlock)
 						.Text_Lambda([this, PoleIndex]()
@@ -627,7 +625,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FTLPole& Pole{Poles[PoleIndex]};
 						const int32 Choice{OrientationOptions.IndexOfByPredicate([&](auto& S) {return S == NewOrientation;})};
 						OnPoleOrientationChanged(static_cast<ETLOrientation>(Choice), PoleIndex);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 					[SNew(STextBlock)
 						.Text_Lambda([this, PoleIndex]()
@@ -663,7 +661,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector L{Pole.Transform.GetLocation()};
 						L.X = V;
 						Pole.Transform.SetLocation(L);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -680,7 +678,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector L{Pole.Transform.GetLocation()};
 						L.Y = V;
 						Pole.Transform.SetLocation(L);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -697,7 +695,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector L{Pole.Transform.GetLocation()};
 						L.Z = V;
 						Pole.Transform.SetLocation(L);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				]
 			]
@@ -726,7 +724,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FRotator R{Pole.Transform.Rotator()};
 						R.Pitch = V;
 						Pole.Transform.SetRotation(FQuat(R));
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -744,7 +742,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FRotator R{Pole.Transform.Rotator()};
 						R.Yaw = V;
 						Pole.Transform.SetRotation(FQuat(R));
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -761,7 +759,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FRotator R{Pole.Transform.Rotator()};
 						R.Roll = V;
 						Pole.Transform.SetRotation(FQuat(R));
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				]
 			]
@@ -791,7 +789,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector S{Pole.Transform.GetScale3D()};
 						S.X = V;
 						Pole.Transform.SetScale3D(S);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -808,7 +806,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector S{Pole.Transform.GetScale3D()};
 						S.Y = V;
 						Pole.Transform.SetScale3D(S);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				] +
 				SHorizontalBox::Slot()
@@ -826,7 +824,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 						FVector S{Pole.Transform.GetScale3D()};
 						S.Z = V;
 						Pole.Transform.SetScale3D(S);
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				]
 			]
@@ -871,7 +869,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 								break;
 							}
 						}
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 					[SNew(STextBlock)
 						.Text_Lambda([this, PoleIndex]()
@@ -923,7 +921,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 								break;
 							}
 						}
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 					[SNew(STextBlock)
 						.Text_Lambda([this, PoleIndex]()
@@ -974,7 +972,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 								break;
 							}
 						}
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 					[SNew(STextBlock)
 						.Text_Lambda([this, PoleIndex]()
@@ -1030,7 +1028,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildPoleEntry(int32 PoleIndex)
 
 						const float ScaleZ {FMath::Max((Remaining / RawExtensibleHeight), 0.1f)};
 						Pole.Offset = FTransform(FQuat::Identity, FVector(0, 0, BaseHeight), FVector(1, 1, ScaleZ));
-						PreviewViewport->Rebuild(Poles);
+						Rebuild();
 					})
 				]
 			]
@@ -1240,10 +1238,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Transform.GetLocation()};
 							L.X = V;
 							Head.Transform.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1260,10 +1255,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Transform.GetLocation()};
 							L.Y = V;
 							Head.Transform.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1280,10 +1272,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Transform.GetLocation()};
 							L.Z = V;
 							Head.Transform.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					]
 				]
@@ -1312,10 +1301,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Offset.GetLocation()};
 							L.X = V;
 							Head.Offset.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1332,10 +1318,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Offset.GetLocation()};
 							L.Y = V;
 							Head.Offset.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1352,10 +1335,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector L{Head.Offset.GetLocation()};
 							L.Z = V;
 							Head.Offset.SetLocation(L);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					]
 				] +
@@ -1383,10 +1363,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FRotator R{Head.Offset.Rotator()};
 							R.Pitch = V;
 							Head.Offset.SetRotation(FQuat{R});
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1403,10 +1380,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FRotator R{Head.Offset.Rotator()};
 							R.Yaw = V;
 							Head.Offset.SetRotation(FQuat{R});
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1423,10 +1397,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FRotator R{Head.Offset.Rotator()};
 							R.Roll = V;
 							Head.Offset.SetRotation(FQuat{R});
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					]
 				] +
@@ -1455,10 +1426,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector S{Head.Offset.GetScale3D()};
 							S.X = V;
 							Head.Offset.SetScale3D(S);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1475,10 +1443,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector S{Head.Offset.GetScale3D()};
 							S.Y = V;
 							Head.Offset.SetScale3D(S);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					] +
 					SHorizontalBox::Slot()
@@ -1495,10 +1460,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildHeadEntry(int32 PoleIndex, int
 							FVector S{Head.Offset.GetScale3D()};
 							S.Z = V;
 							Head.Offset.SetScale3D(S);
-							if (PreviewViewport.IsValid())
-							{
-								Rebuild();
-							}
+							Rebuild();
 						})
 					]
 				] +
@@ -1793,10 +1755,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FVector L{Module.Offset.GetLocation()};
 						L.X = V;
 						Module.Offset.SetLocation(L);
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 			]
@@ -1831,10 +1790,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FVector L{Module.Offset.GetLocation()};
 						L.Y = V;
 						Module.Offset.SetLocation(L);
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 			]
@@ -1869,10 +1825,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FVector L{Module.Offset.GetLocation()};
 						L.Z = V;
 						Module.Offset.SetLocation(L);
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 			]
@@ -1909,10 +1862,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FRotator R{Module.Offset.Rotator()};
 						R.Pitch = V;
 						Module.Offset.SetRotation(FQuat(R));
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 				// Yaw
@@ -1935,10 +1885,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FRotator R{Module.Offset.Rotator()};
 						R.Yaw = V;
 						Module.Offset.SetRotation(FQuat(R));
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 				// Roll
@@ -1961,10 +1908,7 @@ TSharedRef<SWidget> STrafficLightToolWidget::BuildModuleEntry(int32 PoleIndex, i
 						FRotator R{Module.Offset.Rotator()};
 						R.Roll = V;
 						Module.Offset.SetRotation(FQuat(R));
-						if (PreviewViewport.IsValid())
-						{
-							Rebuild();
-						}
+						Rebuild();
 					})
 				]
 			]
