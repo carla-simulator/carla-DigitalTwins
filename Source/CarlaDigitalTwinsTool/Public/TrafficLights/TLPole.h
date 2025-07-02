@@ -29,14 +29,14 @@ struct FTLPole
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
 	FTransform Offset{FTransform::Identity};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Head")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
 	ETLStyle Style{ETLStyle::NorthAmerican};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
 	ETLOrientation Orientation{ETLOrientation::Vertical};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
-	float PoleHeight{5.0f};
+	float PoleHeight{500.0f};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Pole")
 	TArray<FTLHead> Heads;
