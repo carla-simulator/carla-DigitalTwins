@@ -15,18 +15,9 @@
 #include "TLModule.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTLModule
+struct FTLModuleLight
 {
 	GENERATED_BODY()
-
-	UPROPERTY(Transient)
-	UStaticMesh* ModuleMesh{nullptr};
-
-	UPROPERTY(Transient)
-	UStaticMeshComponent* ModuleMeshComponent{nullptr};
-
-	UPROPERTY(Transient)
-	UMaterialInstanceDynamic* LightMID{nullptr};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
 	int32 U{0};
@@ -40,6 +31,27 @@ struct FTLModule
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
 	FLinearColor EmissiveColor{};
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
+	ETLLightType LightType{ETLLightType::SolidColorGreen};
+
+	UPROPERTY(Transient)
+	UMaterialInstanceDynamic* LightMID{nullptr};
+};
+
+USTRUCT(BlueprintType)
+struct FTLModule
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Transient)
+	UStaticMesh* ModuleMesh{nullptr};
+
+	UPROPERTY(Transient)
+	UStaticMeshComponent* ModuleMeshComponent{nullptr};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
+	TArray<FTLModuleLight> Lights{};
+
 	/** Local transform relative to parent head */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
 	FTransform Transform{FTransform::Identity};
@@ -47,9 +59,6 @@ struct FTLModule
 	/** Offset transform */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
 	FTransform Offset{FTransform::Identity};
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
-	ETLLightType LightType{ETLLightType::SolidColorGreen};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traffic Light|Module")
 	bool bHasVisor{false};

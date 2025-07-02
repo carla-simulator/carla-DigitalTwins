@@ -7,6 +7,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/Platform.h"
 #include "TrafficLights/TLHead.h"
 #include "TrafficLights/TLHeadAttachment.h"
 #include "TrafficLights/TLOrientation.h"
@@ -15,11 +16,19 @@
 #include "TrafficLights/Widgets/TLWTrafficLightPreviewViewport.h"
 #include "Widgets/SCompoundWidget.h"
 
-struct FEditorModule
+struct FEditorModuleLight
 {
 	bool bExpanded{true};
 	TSharedPtr<SVerticalBox> Container;
+};
+
+struct FEditorModule
+{
+	bool bExpanded{true};
+	bool bLightsExpanded{true};
+	TSharedPtr<SVerticalBox> Container;
 	TArray<TSharedPtr<FString>> MeshNameOptions;
+	TArray<FEditorModuleLight> Lights;
 };
 
 struct FEditorHead
@@ -79,6 +88,8 @@ private:
 	TSharedRef<SWidget> BuildHeadSection(int32 HeadIndex);
 	TSharedRef<SWidget> BuildModuleEntry(int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex);
 	TSharedRef<SWidget> BuildModuleSection(int32 PoleIndex, int32 HeadIndex);
+	TSharedRef<SWidget> BuildModuleLightEntry(int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex, int32 LightIndex);
+	TSharedRef<SWidget> BuildModuleLightSection(int32 PoleIndex, int32 HeadIndex, int32 ModuleIndex);
 
 private:
 	FString GetHeadStyleText(ETLStyle Style);
