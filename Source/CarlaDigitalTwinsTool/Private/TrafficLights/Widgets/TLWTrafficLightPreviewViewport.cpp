@@ -8,7 +8,9 @@
 #include "TrafficLights/TLLightTypeDataTable.h"
 #include "TrafficLights/TLMaterialFactory.h"
 #include "TrafficLights/TLMeshFactory.h"
+#include "TrafficLights/TLModule.h"
 #include "TrafficLights/TLPole.h"
+#include "UObject/NameTypes.h"
 #include "UObject/UObjectGlobals.h"
 
 void STrafficLightPreviewViewport::Construct(const FArguments& InArgs)
@@ -100,19 +102,22 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLPole&
 	PreviewScene->AddComponent(Comp, ModuleWorldTransform);
 	Comp->SetStaticMesh(ModuleData.ModuleMesh);
 
-	if (ModuleData.LightMID == nullptr)
+	int32 LightIndex{0};
+	for (FTLModuleLight& Light : ModuleData.Lights)
 	{
-		ModuleData.LightMID = FMaterialFactory::GetLightMaterialInstance(Comp);
-	}
-	UMaterialInstanceDynamic* LightMID = ModuleData.LightMID;
-	if (LightMID)
-	{
-		LightMID->SetScalarParameterValue(TEXT("Emissive Intensity"), ModuleData.EmissiveIntensity);
-		LightMID->SetVectorParameterValue(TEXT("Emissive Color"), ModuleData.EmissiveColor);
-		LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(ModuleData.U));
-		LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(ModuleData.V));
-		Comp->SetMaterial(1, LightMID);
-		ModuleData.LightMID = LightMID;
+		if (Light.LightMID == nullptr)
+		{
+			Light.LightMID = FMaterialFactory::GetLightMaterialInstance(Comp);
+		}
+		if (Light.LightMID)
+		{
+			Light.LightMID->SetScalarParameterValue(TEXT("Emissive Intensity"), Light.EmissiveIntensity);
+			Light.LightMID->SetVectorParameterValue(TEXT("Emissive Color"), Light.EmissiveColor);
+			Light.LightMID->SetScalarParameterValue(TEXT("Offset U"), static_cast<float>(Light.U));
+			Light.LightMID->SetScalarParameterValue(TEXT("Offset Y"), static_cast<float>(Light.V));
+			const FName MaterialSlotName{FString::Printf(TEXT("led_%d"), LightIndex++)};
+			Comp->SetMaterialByName(MaterialSlotName, Light.LightMID);
+		}
 	}
 
 	ModuleMeshComponents.Add(Comp);
@@ -122,7 +127,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddModuleMesh(const FTLPole&
 
 UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleBaseMesh(const FTLPole& Pole)
 {
-	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
+	const FTransform PoleWorldTransform{Pole.Transform};
 
 	UWorld* World{PreviewScene->GetWorld()};
 	UObject* LevelOuter{World->PersistentLevel};
@@ -160,7 +165,7 @@ UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleExtensibleMesh(const 
 
 UStaticMeshComponent* STrafficLightPreviewViewport::AddPoleCapMesh(const FTLPole& Pole)
 {
-	const FTransform PoleWorldTransform{Pole.Transform * Pole.Offset};
+	const FTransform PoleWorldTransform{Pole.Transform};
 
 	UWorld* World{PreviewScene->GetWorld()};
 	UObject* LevelOuter{World->PersistentLevel};
@@ -184,10 +189,6 @@ void STrafficLightPreviewViewport::ClearModuleMeshes()
 		if (Comp)
 		{
 			PreviewScene->RemoveComponent(Comp);
-			if (Comp->IsRegistered())
-			{
-				Comp->UnregisterComponent();
-			}
 			Comp->DestroyComponent();
 		}
 	}
@@ -201,10 +202,6 @@ void STrafficLightPreviewViewport::ClearPoleMeshes()
 		if (Comp)
 		{
 			PreviewScene->RemoveComponent(Comp);
-			if (Comp->IsRegistered())
-			{
-				Comp->UnregisterComponent();
-			}
 			Comp->DestroyComponent();
 		}
 	}
@@ -213,10 +210,6 @@ void STrafficLightPreviewViewport::ClearPoleMeshes()
 		if (Comp)
 		{
 			PreviewScene->RemoveComponent(Comp);
-			if (Comp->IsRegistered())
-			{
-				Comp->UnregisterComponent();
-			}
 			Comp->DestroyComponent();
 		}
 	}
@@ -225,10 +218,6 @@ void STrafficLightPreviewViewport::ClearPoleMeshes()
 		if (Comp)
 		{
 			PreviewScene->RemoveComponent(Comp);
-			if (Comp->IsRegistered())
-			{
-				Comp->UnregisterComponent();
-			}
 			Comp->DestroyComponent();
 		}
 	}
