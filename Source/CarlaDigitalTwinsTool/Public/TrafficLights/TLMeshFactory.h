@@ -29,6 +29,9 @@ public:
 	static UDataTable* GetLightTypeMeshTable();
 	static UDataTable* GetPoleMeshTable();
 
+	static int32 CountLedMaterials(UStaticMesh* Mesh);
+	// static TArray<FStaticMaterial> GetLedMaterials(UStaticMesh* Mesh);
+
 private:
 	static UDataTable* LightTypeMeshTable;
 	static UDataTable* ModuleMeshTable;

@@ -1,5 +1,7 @@
 #include "TrafficLights/TLMeshFactory.h"
 
+#include "Components/StaticMeshComponent.h"
+#include "Logging/LogVerbosity.h"
 #include "TrafficLights/TLModuleDataTable.h"
 #include "TrafficLights/TLPoleDataTable.h"
 #include "UObject/NameTypes.h"
@@ -199,4 +201,24 @@ TArray<UStaticMesh*> FTLMeshFactory::GetAllCapMeshesForPole(const FTLPole& Pole)
 		}
 	}
 	return Meshes;
+}
+
+int32 FTLMeshFactory::CountLedMaterials(UStaticMesh* Mesh)
+{
+	if (!IsValid(Mesh))
+	{
+		UE_LOG(LogTemp, Error, TEXT("CountLedSockets: Invalid Mesh"));
+		return 0;
+	}
+
+	int32 Count{0};
+	const TArray<FStaticMaterial>& StaticMaterials{Mesh->GetStaticMaterials()};
+	for (const FStaticMaterial& Material : StaticMaterials)
+	{
+		if (Material.MaterialSlotName.ToString().StartsWith(TEXT("led_")))
+		{
+			++Count;
+		}
+	}
+	return Count;
 }
