@@ -58,6 +58,7 @@ USplineComponent* UGeometryImporter::CreateSpline(UWorld* World, const TArray<FV
         return nullptr;
     }
     SplineActor->SetActorLabel(SplineName);
+    SplineActor->Tags.Add(FName("curb"));
 
     USplineComponent* Spline = NewObject<USplineComponent>(SplineActor);
     Spline->ClearSplinePoints();
