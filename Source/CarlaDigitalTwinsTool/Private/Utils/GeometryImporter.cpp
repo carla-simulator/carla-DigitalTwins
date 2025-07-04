@@ -71,6 +71,38 @@ USplineComponent* UGeometryImporter::CreateSpline(UWorld* World, const TArray<FV
         Spline->AddSplinePoint(Points[i], ESplineCoordinateSpace::World);
     }
 
+    for (int32 i = 0; i < Spline->GetNumberOfSplinePoints(); ++i)
+    {
+        Spline->SetSplinePointType(i, ESplinePointType::Curve, false);
+    }
+
+    Spline->UpdateSpline();
+
+    const float TangentScale = 0.25f;  // 0 = no curve, 1 = full handle length = distance to neighbor
+    int32 Num = Spline->GetNumberOfSplinePoints();
+
+    for (int32 i = 0; i < Num; ++i)
+    {
+        FVector Current = Spline->GetLocationAtSplinePoint(i, ESplineCoordinateSpace::Local);
+        FVector Prev = Spline->GetLocationAtSplinePoint(FMath::Max(i - 1, 0), ESplineCoordinateSpace::Local);
+        FVector Next = Spline->GetLocationAtSplinePoint(FMath::Min(i + 1, Num - 1), ESplineCoordinateSpace::Local);
+        auto D1 = FVector::Distance(Current, Prev);
+        auto D2 = FVector::Distance(Current, Next);
+        auto Clamped = FMath::Min(D1, D2);
+
+        // Direction toward next point
+        FVector Dir = (Next - Prev) * 0.5f;  
+        float DesiredLength = FMath::Min(Dir.Size() * TangentScale, Clamped);
+        FVector Tangent = Dir.GetSafeNormal() * DesiredLength;
+
+        // Arrive tangent points “backward” toward Prev
+        Spline->SetTangentAtSplinePoint(i, -Tangent, ESplineCoordinateSpace::Local, false);
+        // Leave tangent points toward Next
+        Spline->SetTangentAtSplinePoint(i, Tangent, ESplineCoordinateSpace::Local, false);
+    }
+
+    Spline->UpdateSpline();
+
     Spline->SetClosedLoop(true);
     Spline->UpdateSpline();
 
