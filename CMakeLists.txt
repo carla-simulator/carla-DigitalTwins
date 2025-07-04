@@ -119,7 +119,7 @@ find_package (
   REQUIRED
 )
 
-set (SUMO_BRANCH marcel/invalid-map-workaround)
+set (SUMO_BRANCH carla_digitaltwins)
 message (STATUS "Looking for SUMO")
 find_package (
   SUMO
